@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Clientes ─────────────────────────────────────────────────────
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  cpf       String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings  Booking[]
+
+  @@map("clients")
+}
+
+// ── Agendamentos ─────────────────────────────────────────────────
+model Booking {
+  id               String        @id @default(cuid())
+  clientId         String
+  client           Client        @relation(fields: [clientId], references: [id])
+
+  startAt          DateTime
+  endAt            DateTime
+  totalAmount      Float
+  status           BookingStatus @default(PENDING)
+
+  // Pagamento ASAAS
+  asaasChargeId    String?       @unique
+  asaasPaymentUrl  String?
+  paidAt           DateTime?
+
+  // Voucher aplicado
+  voucherId        String?
+  voucher          Voucher?      @relation(fields: [voucherId], references: [id])
+  discountAmount   Float?        @default(0)
+
+  // Control iD
+  controlIdUserId  String?
+  accessGrantedAt  DateTime?
+  accessRevokedAt  DateTime?
+
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  accessLogs       AccessLog[]
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+// ── Vouchers ─────────────────────────────────────────────────────
+model Voucher {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  description   String?
+  discountType  DiscountType
+  discountValue Float
+  maxUses       Int?
+  usedCount     Int          @default(0)
+  expiresAt     DateTime?
+  active        Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  bookings      Booking[]
+
+  @@map("vouchers")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+// ── Log de Acessos ────────────────────────────────────────────────
+model AccessLog {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  event     String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@map("access_logs")
+}
+
+// ── Admin ─────────────────────────────────────────────────────────
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm list *)",
+      "Bash(npm install *)",
+      "Bash(node gerar_proposta.js)",
+      "Bash(npm init *)",
+      "Bash(del \"D:\\\\1 - Projetos\\\\Carlos\\\\automacao_sala_comercial\\\\gerar_proposta.js\")",
+      "Bash(python -c \"import reportlab; print\\('reportlab ok'\\)\")",
+      "Bash(python -c \"import weasyprint; print\\('weasyprint ok'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python gerar_proposta_pdf.py)",
+      "Bash(python gerar_proposta2.py)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(npx create-next-app@latest sala-comercial --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(npx prisma *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'chore: estrutura inicial do projeto *)"
+    ]
+  }
+}
