@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createAsaasCustomer, createAsaasCharge } from "@/lib/asaas/client";
 import { sendBookingConfirmation } from "@/lib/resend/emails";
-import { BookingStatus } from "@prisma/client";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
 
@@ -148,7 +147,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month"); // ex: "2026-05"
 
-  const activeStatuses = ["PENDING", "PAID", "ACTIVE"] as BookingStatus[];
+  const activeStatuses = ["PENDING", "PAID", "ACTIVE"] as const;
 
   const where = month
     ? {
