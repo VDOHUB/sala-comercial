@@ -22,8 +22,8 @@ const PLANS: Record<string, { label: string; price: number; installments: string
 
 const stepVariants: Variants = {
   enter: { opacity: 0, x: 24, filter: "blur(6px)" },
-  center: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as number[] } },
-  exit: { opacity: 0, x: -24, filter: "blur(6px)", transition: { duration: 0.3 } },
+  center: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: "easeOut" } },
+  exit: { opacity: 0, x: -24, filter: "blur(6px)", transition: { duration: 0.3, ease: "easeIn" } },
 };
 
 export function BookingSection() {
