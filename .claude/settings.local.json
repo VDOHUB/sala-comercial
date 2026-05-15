@@ -17,7 +17,11 @@
       "Bash(npx prisma *)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit -m 'chore: estrutura inicial do projeto *)"
+      "Bash(git commit -m 'chore: estrutura inicial do projeto *)",
+      "Bash(node propostas/gerar_checklist_docx.js)",
+      "Bash(npm run *)",
+      "Bash(npx tsx *)",
+      "Bash(git commit -m 'feat: dashboard admin + painel de vouchers *)"
     ]
   }
 }
