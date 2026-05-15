@@ -1,49 +1,49 @@
 const features = [
   {
     icon: "📅",
-    title: "Agendamento online",
-    desc: "Escolha data e horário diretamente no site, com disponibilidade em tempo real. Sem ligações, sem espera.",
+    title: "Agendamento por período",
+    desc: "Escolha o período matutino (08h–13h) ou vespertino (14h–19h) diretamente no site. Disponibilidade em tempo real.",
   },
   {
     icon: "💳",
-    title: "Pagamento facilitado",
-    desc: "PIX, boleto ou cartão de crédito. Após a confirmação do pagamento, seu acesso é liberado automaticamente.",
+    title: "Cartão em até 10x",
+    desc: "Parcele em até 10x sem burocracia. Após confirmação do pagamento, seu acesso é liberado automaticamente.",
   },
   {
     icon: "🔐",
-    title: "Acesso por facial",
-    desc: "Cadastro da sua foto feito pelo próprio celular. Na hora de entrar, só aproximar o rosto — sem chave, sem código.",
+    title: "Acesso por reconhecimento facial",
+    desc: "Cadastre sua foto pelo celular após o pagamento. Na hora de entrar, apenas aproxime o rosto — sem chave, sem código.",
   },
   {
     icon: "⏱️",
-    title: "Acesso temporário",
-    desc: "Seu acesso é válido exatamente no período reservado. Ao encerrar, é revogado automaticamente.",
+    title: "Acesso temporário e seguro",
+    desc: "Seu acesso é válido exatamente no período reservado. Ao encerrar, é revogado automaticamente pelo sistema.",
   },
   {
     icon: "🎟️",
-    title: "Vouchers e promoções",
-    desc: "Receba cupons de desconto para inaugurações, parcerias ou primeiras visitas. Aplicado direto no checkout.",
+    title: "Vouchers de desconto",
+    desc: "Receba cupons exclusivos para parceiros e primeiras visitas. Aplicado diretamente no checkout.",
   },
   {
-    icon: "📊",
-    title: "Sem burocracia",
-    desc: "Tudo digital, tudo automático. Confirmação por email, lembrete antes da reserva e recibo após o pagamento.",
+    icon: "📩",
+    title: "Notificações automáticas",
+    desc: "Confirmação por email, lembrete 30 min antes do término e recibo após o pagamento. Tudo automático.",
   },
 ];
 
 export function Features() {
   return (
-    <section id="sobre" className="py-24 bg-gray-50">
+    <section id="sobre" className="py-24" style={{ backgroundColor: "#f5f0e8" }}>
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="text-emerald-600 font-semibold text-sm uppercase tracking-wider">
-            Por que escolher
+          <span className="font-semibold text-sm uppercase tracking-wider" style={{ color: "#321e07" }}>
+            Por que escolher o VDO HUB
           </span>
-          <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-4">
+          <h2 className="text-4xl font-bold mt-2 mb-4" style={{ color: "#321e07" }}>
             Tudo o que você precisa,{" "}
-            <span className="text-emerald-600">sem complicação</span>
+            <span style={{ color: "#8b6a3e" }}>sem complicação</span>
           </h2>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: "#6b5a45" }}>
             Do agendamento ao acesso, tudo automatizado para você focar no que realmente importa.
           </p>
         </div>
@@ -52,11 +52,12 @@ export function Features() {
           {features.map((f) => (
             <div
               key={f.title}
-              className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+              className="bg-white rounded-2xl p-6 shadow-sm border hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+              style={{ borderColor: "#e8ddd0" }}
             >
               <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{f.title}</h3>
-              <p className="text-gray-500 leading-relaxed text-sm">{f.desc}</p>
+              <h3 className="text-lg font-bold mb-2" style={{ color: "#321e07" }}>{f.title}</h3>
+              <p className="leading-relaxed text-sm" style={{ color: "#6b5a45" }}>{f.desc}</p>
             </div>
           ))}
         </div>

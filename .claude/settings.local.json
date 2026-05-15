@@ -21,7 +21,10 @@
       "Bash(node propostas/gerar_checklist_docx.js)",
       "Bash(npm run *)",
       "Bash(npx tsx *)",
-      "Bash(git commit -m 'feat: dashboard admin + painel de vouchers *)"
+      "Bash(git commit -m 'feat: dashboard admin + painel de vouchers *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(node -e \"const p = require\\('@prisma/client'\\); console.log\\(Object.keys\\(p\\).slice\\(0,20\\)\\)\")"
     ]
   }
 }
