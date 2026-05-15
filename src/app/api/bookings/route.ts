@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month"); // ex: "2026-05"
 
-  const activeStatuses = ["PENDING", "PAID", "ACTIVE"] as const;
+  const activeStatuses = ["PENDING", "PAID", "ACTIVE"] as ("PENDING" | "PAID" | "ACTIVE")[];
 
   const where = month
     ? {
