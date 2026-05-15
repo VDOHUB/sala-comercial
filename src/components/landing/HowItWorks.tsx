@@ -1,65 +1,64 @@
 "use client";
 import { useRef } from "react";
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 
 const steps = [
   {
     number: "01",
-    title: "Escolha o periodo",
-    desc: "Selecione o dia e o periodo — matutino (08h–13h) ou vespertino (14h–19h). Disponibilidade em tempo real, sem conflitos.",
-    detail: "Apenas dias uteis",
+    title: "Escolha o período",
+    desc: "Selecione o dia e o período — matutino (08h–13h) ou vespertino (14h–19h). Disponibilidade em tempo real, sem conflitos.",
+    detail: "Apenas dias úteis",
   },
   {
     number: "02",
-    title: "Pague no cartao",
-    desc: "Parcele em ate 10x sem juros conforme o plano. A confirmacao e automatica apos o processamento.",
-    detail: "Cartao de credito",
+    title: "Pague no cartão",
+    desc: "Parcele em até 10x sem juros conforme o plano. A confirmação é automática após o processamento.",
+    detail: "Cartão de crédito",
   },
   {
     number: "03",
     title: "Cadastre seu rosto",
-    desc: "Receba um link por email para cadastrar sua foto pelo celular. O sistema biometrico e configurado automaticamente.",
+    desc: "Receba um link por e-mail para cadastrar sua foto pelo celular. O sistema biométrico é configurado automaticamente.",
     detail: "Reconhecimento facial",
   },
   {
     number: "04",
     title: "Acesse a sala",
-    desc: "No horario reservado, aproxime o rosto da fechadura e a porta abre. Acesso revogado automaticamente ao encerrar.",
+    desc: "No horário reservado, aproxime o rosto da fechadura e a porta abre. Acesso revogado automaticamente ao encerrar.",
     detail: "Acesso automatizado",
   },
 ];
 
 const periods = [
-  { label: "Periodo Matutino", time: "08h00 as 13h00", note: "Tolerancia de 15 min apos encerramento" },
-  { label: "Periodo Vespertino", time: "14h00 as 19h00", note: "Intervalo 13h–14h para manutencao" },
+  { label: "Período Matutino", time: "08h00 às 13h00", note: "Tolerância de 15 min após o encerramento" },
+  { label: "Período Vespertino", time: "14h00 às 19h00", note: "Intervalo das 13h às 14h para manutenção" },
 ];
 
 function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const inView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30, filter: "blur(8px)" }}
-      animate={inView ? { opacity: 1, x: 0, filter: "blur(0px)" } : {}}
-      transition={{ duration: 0.8, delay: index * 0.12, ease: "easeOut" }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
       className="relative group"
     >
       <div
-        className="rounded-2xl p-6 h-full relative overflow-hidden"
+        className="rounded-2xl p-5 sm:p-6 h-full relative overflow-hidden"
         style={{
           background: "rgba(255,255,255,0.025)",
           border: "1px solid rgba(215,203,181,0.07)",
         }}
       >
-        {/* Hover glow */}
         <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
           style={{ background: "radial-gradient(circle at 0% 0%, rgba(215,203,181,0.05) 0%, transparent 60%)" }}
         />
 
-        <div className="flex items-start gap-4 mb-4">
+        <div className="flex items-start gap-3 mb-4">
           <div
             className="flex-shrink-0 text-xs font-black tracking-widest tabular-nums"
             style={{ color: "rgba(215,203,181,0.15)", fontSize: "11px" }}
@@ -74,7 +73,7 @@ function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
           </div>
         </div>
 
-        <h3 className="text-lg font-bold mb-3 leading-snug" style={{ color: "#d7cbb5" }}>{step.title}</h3>
+        <h3 className="text-base sm:text-lg font-bold mb-2 leading-snug" style={{ color: "#d7cbb5" }}>{step.title}</h3>
         <p className="text-sm leading-relaxed" style={{ color: "rgba(215,203,181,0.45)" }}>{step.desc}</p>
       </div>
     </motion.div>
@@ -83,18 +82,14 @@ function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
 
 export function HowItWorks() {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
-
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
-  const lineHeight = useTransform(scrollYProgress, [0.1, 0.9], ["0%", "100%"]);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="como-funciona" className="py-32 relative" style={{ background: "#0c0704" }}>
+    <section id="como-funciona" className="py-24 sm:py-32 relative" style={{ background: "#0c0704" }}>
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
 
-      <div className="max-w-6xl mx-auto px-6" ref={containerRef}>
-        <div ref={ref} className="text-center mb-20">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <div ref={ref} className="text-center mb-14 sm:mb-20">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -105,10 +100,10 @@ export function HowItWorks() {
             Processo
           </motion.p>
           <motion.h2
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
-            className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
             style={{ color: "#d7cbb5" }}
           >
             Como funciona.
@@ -116,32 +111,30 @@ export function HowItWorks() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-base max-w-md mx-auto"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-sm sm:text-base max-w-md mx-auto"
             style={{ color: "rgba(215,203,181,0.4)" }}
           >
             Do agendamento ao acesso em 4 etapas. Tudo automatizado.
           </motion.p>
         </div>
 
-        {/* Steps grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-16">
           {steps.map((step, i) => (
             <StepCard key={step.number} step={step} index={i} />
           ))}
         </div>
 
-        {/* Periodos */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
         >
           {periods.map((p) => (
             <div
               key={p.label}
-              className="rounded-2xl p-6 relative overflow-hidden group"
+              className="rounded-2xl p-5 sm:p-6 relative overflow-hidden group"
               style={{
                 background: "rgba(255,255,255,0.025)",
                 border: "1px solid rgba(215,203,181,0.07)",
@@ -158,7 +151,7 @@ export function HowItWorks() {
               <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: "rgba(215,203,181,0.3)" }}>
                 {p.label}
               </p>
-              <p className="text-3xl font-extrabold tracking-tight mb-2" style={{ color: "#d7cbb5" }}>{p.time}</p>
+              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2" style={{ color: "#d7cbb5" }}>{p.time}</p>
               <p className="text-sm" style={{ color: "rgba(215,203,181,0.4)" }}>{p.note}</p>
             </div>
           ))}

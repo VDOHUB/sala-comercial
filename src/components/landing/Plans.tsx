@@ -50,17 +50,16 @@ export function Plans() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="planos" className="py-32 relative" style={{ background: "#0c0704" }}>
+    <section id="planos" className="py-24 sm:py-32 relative" style={{ background: "#0c0704" }}>
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
 
-      {/* Ambient glow center */}
       <div
         className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(ellipse, rgba(215,203,181,0.04) 0%, transparent 70%)", filter: "blur(40px)" }}
       />
 
-      <div className="max-w-6xl mx-auto px-6">
-        <div ref={ref} className="text-center mb-20">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <div ref={ref} className="text-center mb-14 sm:mb-20">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -72,10 +71,10 @@ export function Plans() {
           </motion.p>
 
           <motion.h2
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
-            className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
             style={{ color: "#d7cbb5" }}
           >
             Escolha seu plano.
@@ -84,24 +83,24 @@ export function Plans() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-base max-w-md mx-auto"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-sm sm:text-base max-w-md mx-auto"
             style={{ color: "rgba(215,203,181,0.4)" }}
           >
-            Cada período = <strong style={{ color: "rgba(215,203,181,0.65)" }}>5 horas</strong> de uso.
+            Cada período equivale a <strong style={{ color: "rgba(215,203,181,0.65)" }}>5 horas</strong> de uso.
             Matutino (08h–13h) ou vespertino (14h–19h). Pagamento via cartão.
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 40, filter: "blur(8px)" }}
-              animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
-              transition={{ duration: 0.7, delay: i * 0.1, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
               whileHover={{ y: -6, scale: 1.02 }}
-              className="relative rounded-2xl p-6 flex flex-col overflow-hidden group"
+              className="relative rounded-2xl p-5 sm:p-6 flex flex-col overflow-hidden group"
               style={plan.highlight ? {
                 background: "rgba(215,203,181,0.07)",
                 border: "1px solid rgba(215,203,181,0.18)",
@@ -111,7 +110,6 @@ export function Plans() {
                 border: "1px solid rgba(215,203,181,0.07)",
               }}
             >
-              {/* Highlight glow top */}
               {plan.highlight && (
                 <div
                   className="absolute top-0 left-0 right-0 h-px"
@@ -119,28 +117,27 @@ export function Plans() {
                 />
               )}
 
-              {/* Hover glow */}
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
                 style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.04) 0%, transparent 60%)" }}
               />
 
-              {plan.tag && (
+              {plan.tag ? (
                 <div
                   className="inline-flex self-start mb-5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide"
                   style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5", border: "1px solid rgba(215,203,181,0.15)" }}
                 >
                   {plan.tag}
                 </div>
+              ) : (
+                <div className="mb-10" />
               )}
-
-              {!plan.tag && <div className="mb-10" />}
 
               <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "rgba(215,203,181,0.3)" }}>
                 {plan.name}
               </p>
 
-              <p className="text-4xl font-extrabold tracking-tight mb-1" style={{ color: "#d7cbb5" }}>
+              <p className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-1" style={{ color: "#d7cbb5" }}>
                 R${plan.price.toLocaleString("pt-BR")}
               </p>
               <p className="text-xs mb-6" style={{ color: "rgba(215,203,181,0.35)" }}>
@@ -150,7 +147,9 @@ export function Plans() {
               <div className="space-y-2 mb-8">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full" style={{ background: "rgba(215,203,181,0.3)" }} />
-                  <span className="text-sm" style={{ color: "rgba(215,203,181,0.55)" }}>{plan.periods} período{plan.periods > 1 ? "s" : ""}</span>
+                  <span className="text-sm" style={{ color: "rgba(215,203,181,0.55)" }}>
+                    {plan.periods} período{plan.periods > 1 ? "s" : ""}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full" style={{ background: "rgba(215,203,181,0.3)" }} />
@@ -166,7 +165,7 @@ export function Plans() {
 
               <motion.button
                 onClick={() => document.getElementById("reservar")?.scrollIntoView({ behavior: "smooth" })}
-                className="mt-auto w-full py-3 rounded-xl text-sm font-semibold transition-all"
+                className="mt-auto w-full py-3 rounded-xl text-sm font-semibold"
                 style={plan.highlight ? {
                   background: "#d7cbb5",
                   color: "#321e07",
@@ -175,7 +174,10 @@ export function Plans() {
                   color: "rgba(215,203,181,0.7)",
                   border: "1px solid rgba(215,203,181,0.1)",
                 }}
-                whileHover={plan.highlight ? { boxShadow: "0 0 24px rgba(215,203,181,0.2)" } : { background: "rgba(215,203,181,0.12)" }}
+                whileHover={plan.highlight
+                  ? { boxShadow: "0 0 24px rgba(215,203,181,0.2)" }
+                  : { background: "rgba(215,203,181,0.12)" }
+                }
                 whileTap={{ scale: 0.97 }}
               >
                 Escolher plano
@@ -187,12 +189,12 @@ export function Plans() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.6 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
           className="text-center text-xs mt-8"
           style={{ color: "rgba(215,203,181,0.25)" }}
         >
-          Os beneficios sao validos durante o periodo de vigencia do plano contratado.
-          Itens consumidos do frigobar serao cobrados a parte.
+          Os benefícios são válidos durante o período de vigência do plano contratado.
+          Itens consumidos do frigobar serão cobrados à parte.
         </motion.p>
       </div>
     </section>

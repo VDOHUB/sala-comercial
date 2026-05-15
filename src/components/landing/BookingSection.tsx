@@ -14,10 +14,10 @@ const DAYS = Array.from({ length: 60 }, (_, i) => addDays(new Date(), i + 1))
   .slice(0, 30);
 
 const PLANS: Record<string, { label: string; price: number; installments: string }> = {
-  HUB_ONE:     { label: "HUB ONE — 1 periodo",    price: 300,  installments: "3x de R$ 100,00" },
-  HUB_FIVE:    { label: "HUB FIVE — 5 periodos",  price: 1200, installments: "10x de R$ 120,00" },
-  HUB_TEN:     { label: "HUB TEN — 10 periodos",  price: 2200, installments: "10x de R$ 220,00" },
-  HUB_PARTNER: { label: "HUB PARTNER — 15 periodos", price: 3000, installments: "10x de R$ 300,00" },
+  HUB_ONE:     { label: "HUB ONE — 1 período",    price: 300,  installments: "3x de R$ 100,00" },
+  HUB_FIVE:    { label: "HUB FIVE — 5 períodos",  price: 1200, installments: "10x de R$ 120,00" },
+  HUB_TEN:     { label: "HUB TEN — 10 períodos",  price: 2200, installments: "10x de R$ 220,00" },
+  HUB_PARTNER: { label: "HUB PARTNER — 15 períodos", price: 3000, installments: "10x de R$ 300,00" },
 };
 
 const stepVariants: Variants = {
@@ -140,17 +140,17 @@ export function BookingSection() {
             Reserve agora
           </p>
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4" style={{ color: "#d7cbb5" }}>
-            Seu periodo.
+            Seu período.
           </h2>
           <p className="text-base" style={{ color: "rgba(215,203,181,0.4)" }}>
-            Disponibilidade em tempo real. Confirmacao instantanea.
+            Disponibilidade em tempo real. Confirmação instantanea.
           </p>
         </div>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-3 mb-10">
           {[
-            { n: 1, label: "Data e periodo" },
+            { n: 1, label: "Data e período" },
             { n: 2, label: "Seus dados" },
             { n: 3, label: "Confirmado" },
           ].map((s, i) => (
@@ -230,7 +230,7 @@ export function BookingSection() {
                   })}
                 </div>
 
-                {/* Periodo */}
+                {/* Período */}
                 <AnimatePresence>
                   {selectedDate && (
                     <motion.div
@@ -240,7 +240,7 @@ export function BookingSection() {
                       transition={{ duration: 0.4 }}
                     >
                       <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "rgba(215,203,181,0.3)" }}>
-                        02 / Periodo
+                        02 / Período
                       </p>
                       <div className="grid grid-cols-2 gap-3 mb-8">
                         {PERIODS.map((p) => (
@@ -387,8 +387,8 @@ export function BookingSection() {
                   <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: "rgba(215,203,181,0.08)" }}>
                     <span style={{ fontSize: 10 }}>CC</span>
                   </div>
-                  Pagamento via <strong className="ml-1" style={{ color: "rgba(215,203,181,0.7)" }}>cartao de credito</strong>
-                  <span className="ml-auto" style={{ color: "rgba(215,203,181,0.3)" }}>ate 10x sem juros</span>
+                  Pagamento via <strong className="ml-1" style={{ color: "rgba(215,203,181,0.7)" }}>cartão de credito</strong>
+                  <span className="ml-auto" style={{ color: "rgba(215,203,181,0.3)" }}>até 10x sem juros</span>
                 </div>
 
                 <div className="flex gap-3">
@@ -439,10 +439,10 @@ export function BookingSection() {
 
                 <h3 className="text-2xl font-extrabold tracking-tight mb-2" style={{ color: "#d7cbb5" }}>Reserva criada</h3>
                 <p className="text-sm mb-2" style={{ color: "rgba(215,203,181,0.45)" }}>
-                  Email de confirmacao enviado em instantes.
+                  Email de confirmação enviado em instantes.
                 </p>
                 <p className="text-sm mb-10" style={{ color: "rgba(215,203,181,0.45)" }}>
-                  Apos o pagamento, seu acesso facial e configurado automaticamente.
+                  Após o pagamento, seu acesso facial e configurado automaticamente.
                 </p>
 
                 <div

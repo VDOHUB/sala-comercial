@@ -1,19 +1,19 @@
 "use client";
 import { useRef, useState } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 
 const amenities = [
-  { icon: "—", label: "Ar-condicionado" },
-  { icon: "—", label: "Wi-Fi de alta velocidade" },
-  { icon: "—", label: "Frigobar" },
-  { icon: "—", label: "Tomadas e USB" },
-  { icon: "—", label: "Iluminacao profissional" },
-  { icon: "—", label: "Acesso facial 24h" },
+  "Ar-condicionado",
+  "Wi-Fi de alta velocidade",
+  "Frigobar",
+  "Tomadas e USB",
+  "Iluminação profissional",
+  "Acesso facial 24h",
 ];
 
 const photos = [
-  { id: 1, label: "Vista geral", span: "col-span-2 row-span-2" },
-  { id: 2, label: "Mesa de reuniao" },
+  { id: 1, label: "Vista geral da sala" },
+  { id: 2, label: "Mesa de reunião" },
   { id: 3, label: "Ambiente" },
   { id: 4, label: "Detalhes" },
   { id: 5, label: "Comodidades" },
@@ -57,11 +57,11 @@ export function Gallery() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="espaco" className="py-32 relative" style={{ background: "#0c0704" }}>
+    <section id="espaco" className="py-24 sm:py-32 relative" style={{ background: "#0c0704" }}>
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
 
-      <div className="max-w-6xl mx-auto px-6">
-        <div ref={ref} className="text-center mb-20">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <div ref={ref} className="text-center mb-14 sm:mb-20">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -69,35 +69,34 @@ export function Gallery() {
             className="text-xs font-semibold tracking-widest uppercase mb-4"
             style={{ color: "rgba(215,203,181,0.3)" }}
           >
-            O espaco
+            O espaço
           </motion.p>
           <motion.h2
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
-            className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
             style={{ color: "#d7cbb5" }}
           >
-            Conhea a sala.
+            Conheça a sala.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-base max-w-lg mx-auto"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-sm sm:text-base max-w-lg mx-auto"
             style={{ color: "rgba(215,203,181,0.4)" }}
           >
-            Ambiente moderno, climatizado e equipado para reunioes, atendimentos e trabalho concentrado.
+            Ambiente moderno, climatizado e equipado para reuniões, atendimentos e trabalho concentrado.
             Galeria completa em breve.
           </motion.p>
         </div>
 
-        {/* Grid de fotos */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-          className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-12"
+          transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+          className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8 sm:mb-12"
         >
           <div className="col-span-2 row-span-2">
             <PhotoPlaceholder label="Vista geral da sala" className="aspect-[4/3]" />
@@ -108,20 +107,20 @@ export function Gallery() {
         </motion.div>
 
         {/* Amenidades */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {amenities.map((a, i) => (
             <motion.div
-              key={a.label}
-              initial={{ opacity: 0, y: 20 }}
+              key={a}
+              initial={{ opacity: 0, y: 16 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.5 + i * 0.06 }}
-              className="rounded-xl p-4 text-center"
+              transition={{ duration: 0.5, delay: 0.4 + i * 0.06 }}
+              className="rounded-xl p-3 sm:p-4 text-center"
               style={{
                 background: "rgba(255,255,255,0.02)",
                 border: "1px solid rgba(215,203,181,0.07)",
               }}
             >
-              <p className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.5)" }}>{a.label}</p>
+              <p className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.5)" }}>{a}</p>
             </motion.div>
           ))}
         </div>

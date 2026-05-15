@@ -41,7 +41,6 @@ function fadeUp(i: number) {
   };
 }
 
-// Dashboard flutuante simulando automação
 function FloatingDashboard() {
   return (
     <motion.div
@@ -56,7 +55,7 @@ function FloatingDashboard() {
           background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(215,203,181,0.12)",
           backdropFilter: "blur(20px)",
-          width: 340,
+          width: 320,
           boxShadow: "0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(215,203,181,0.06), inset 0 1px 0 rgba(215,203,181,0.06)",
         }}
       >
@@ -67,9 +66,9 @@ function FloatingDashboard() {
         >
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.6)" }}>Sistema ativo</span>
+            <span className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.5)" }}>VDO HUB — Anápolis</span>
           </div>
-          <span className="text-xs" style={{ color: "rgba(215,203,181,0.3)" }}>VDO HUB</span>
+          <span className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>ao vivo</span>
         </div>
 
         {/* Status cards */}
@@ -102,12 +101,12 @@ function FloatingDashboard() {
             </div>
           ))}
 
-          {/* Acesso recente */}
+          {/* Último acesso */}
           <div
             className="rounded-xl p-3"
             style={{ background: "rgba(215,203,181,0.04)", border: "1px solid rgba(215,203,181,0.06)" }}
           >
-            <p className="text-xs mb-2 font-medium" style={{ color: "rgba(215,203,181,0.45)" }}>Ultimo acesso</p>
+            <p className="text-xs mb-2 font-medium" style={{ color: "rgba(215,203,181,0.45)" }}>Último acesso</p>
             <div className="flex items-center gap-3">
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
@@ -129,7 +128,7 @@ function FloatingDashboard() {
             style={{ background: "rgba(215,203,181,0.06)", border: "1px solid rgba(215,203,181,0.1)" }}
           >
             <div>
-              <p className="text-xs" style={{ color: "rgba(215,203,181,0.45)" }}>Proxima reserva</p>
+              <p className="text-xs" style={{ color: "rgba(215,203,181,0.45)" }}>Próxima reserva</p>
               <p className="text-sm font-semibold" style={{ color: "#d7cbb5" }}>14h00 hoje</p>
             </div>
             <div
@@ -149,17 +148,17 @@ export function Hero() {
   const containerRef = useRef<HTMLElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 40, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 40, damping: 20 });
+  const springX = useSpring(mouseX, { stiffness: 30, damping: 25 });
+  const springY = useSpring(mouseY, { stiffness: 30, damping: 25 });
 
   useEffect(() => {
     const handleMouse = (e: MouseEvent) => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      mouseX.set((e.clientX - rect.left - rect.width / 2) * 0.02);
-      mouseY.set((e.clientY - rect.top - rect.height / 2) * 0.02);
+      mouseX.set((e.clientX - rect.left - rect.width / 2) * 0.015);
+      mouseY.set((e.clientY - rect.top - rect.height / 2) * 0.015);
     };
-    window.addEventListener("mousemove", handleMouse);
+    window.addEventListener("mousemove", handleMouse, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouse);
   }, [mouseX, mouseY]);
 
@@ -180,14 +179,14 @@ export function Hero() {
         style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 0%, #0c0704 100%)" }}
       />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 w-full pt-24 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 w-full pt-28 pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* Left — texto */}
-          <div>
+          <div className="text-center lg:text-left">
             <motion.div
               {...fadeUp(0)}
-              className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full"
+              className="inline-flex items-center gap-2 mb-6 sm:mb-8 px-4 py-2 rounded-full"
               style={{
                 background: "rgba(215,203,181,0.06)",
                 border: "1px solid rgba(215,203,181,0.1)",
@@ -199,22 +198,22 @@ export function Hero() {
                 transition={{ duration: 2, repeat: Infinity }}
               />
               <span className="text-xs font-medium tracking-wide" style={{ color: "rgba(215,203,181,0.6)" }}>
-                Anápolis, GO — Sistema ativo
+                Anápolis, GO
               </span>
             </motion.div>
 
             <motion.h1
               {...fadeUp(1)}
-              className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-6 glow-text"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-5 sm:mb-6 glow-text"
               style={{ color: "#d7cbb5" }}
             >
-              Sala inteligente.<br />
-              <span style={{ color: "rgba(215,203,181,0.35)" }}>Acesso automatizado.</span>
+              Seu espaço.<br />
+              <span style={{ color: "rgba(215,203,181,0.35)" }}>Quando você precisar.</span>
             </motion.h1>
 
             <motion.p
               {...fadeUp(2)}
-              className="text-lg leading-relaxed mb-10 max-w-md"
+              className="text-base sm:text-lg leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto lg:mx-0"
               style={{ color: "rgba(215,203,181,0.5)" }}
             >
               Aluguel por período com reconhecimento facial, pagamento online e
@@ -224,11 +223,11 @@ export function Hero() {
             {/* CTAs */}
             <motion.div
               {...fadeUp(3)}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
             >
               <motion.button
                 onClick={() => document.getElementById("reservar")?.scrollIntoView({ behavior: "smooth" })}
-                className="px-8 py-4 rounded-2xl text-sm font-bold relative overflow-hidden"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-sm font-bold"
                 style={{ background: "#d7cbb5", color: "#321e07" }}
                 whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(215,203,181,0.25)" }}
                 whileTap={{ scale: 0.97 }}
@@ -237,7 +236,7 @@ export function Hero() {
               </motion.button>
               <motion.button
                 onClick={() => document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" })}
-                className="px-8 py-4 rounded-2xl text-sm font-bold"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-sm font-bold"
                 style={{
                   background: "rgba(215,203,181,0.06)",
                   border: "1px solid rgba(215,203,181,0.12)",
@@ -253,22 +252,22 @@ export function Hero() {
             {/* Stats */}
             <motion.div
               {...fadeUp(4)}
-              className="flex flex-wrap gap-8 mt-14"
+              className="flex flex-wrap gap-6 sm:gap-8 mt-10 sm:mt-14 justify-center lg:justify-start"
             >
               {[
                 { value: "5h", label: "por período" },
                 { value: "10x", label: "sem juros" },
-                { value: "24/7", label: "automação" },
+                { value: "Seg–Sex", label: "disponível" },
               ].map((s) => (
                 <div key={s.label}>
-                  <p className="text-2xl font-bold" style={{ color: "#d7cbb5" }}>{s.value}</p>
+                  <p className="text-xl sm:text-2xl font-bold" style={{ color: "#d7cbb5" }}>{s.value}</p>
                   <p className="text-xs mt-0.5" style={{ color: "rgba(215,203,181,0.4)" }}>{s.label}</p>
                 </div>
               ))}
             </motion.div>
           </div>
 
-          {/* Right — dashboard flutuante */}
+          {/* Right — dashboard flutuante (só desktop) */}
           <motion.div
             className="hidden lg:flex justify-center"
             style={{ x: springX, y: springY }}

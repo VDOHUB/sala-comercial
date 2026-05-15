@@ -16,7 +16,7 @@
 }
 
 html {
-  scroll-behavior: auto; /* Lenis cuida disso */
+  scroll-behavior: smooth;
 }
 
 body {
