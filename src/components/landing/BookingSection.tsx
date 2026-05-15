@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { format, addDays, isWeekend } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -20,9 +20,9 @@ const PLANS: Record<string, { label: string; price: number; installments: string
   HUB_PARTNER: { label: "HUB PARTNER — 15 periodos", price: 3000, installments: "10x de R$ 300,00" },
 };
 
-const stepVariants = {
+const stepVariants: Variants = {
   enter: { opacity: 0, x: 24, filter: "blur(6px)" },
-  center: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  center: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as number[] } },
   exit: { opacity: 0, x: -24, filter: "blur(6px)", transition: { duration: 0.3 } },
 };
 
