@@ -74,7 +74,7 @@ export function Gallery() {
           <motion.h2
             initial={{ opacity: 0, y: 24 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
             className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
             style={{ color: "#d7cbb5" }}
           >
@@ -96,7 +96,7 @@ export function Gallery() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
           className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-12"
         >
           <div className="col-span-2 row-span-2">

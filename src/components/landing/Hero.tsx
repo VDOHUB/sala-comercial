@@ -37,7 +37,7 @@ const fadeUp = {
   hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
   visible: (i: number) => ({
     opacity: 1, y: 0, filter: "blur(0px)",
-    transition: { duration: 0.9, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.9, delay: i * 0.15, ease: "easeOut" },
   }),
 };
 
@@ -48,7 +48,7 @@ function FloatingDashboard() {
       className="animate-float-slow"
       initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 1.2, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 1.2, delay: 1.2, ease: "easeOut" }}
     >
       <div
         className="relative rounded-2xl overflow-hidden"

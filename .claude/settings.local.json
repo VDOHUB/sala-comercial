@@ -25,7 +25,8 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(node -e \"const p = require\\('@prisma/client'\\); console.log\\(Object.keys\\(p\\).slice\\(0,20\\)\\)\")",
-      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\({...p.dependencies,...p.devDependencies}\\).filter\\(k=>['framer-motion','gsap','lenis','@studio-freight/lenis'].includes\\(k\\)\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\({...p.dependencies,...p.devDependencies}\\).filter\\(k=>['framer-motion','gsap','lenis','@studio-freight/lenis'].includes\\(k\\)\\)\\)\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

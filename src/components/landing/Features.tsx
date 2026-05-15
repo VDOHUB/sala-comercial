@@ -44,7 +44,7 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       ref={ref}
       initial={{ opacity: 0, y: 40, filter: "blur(8px)" }}
       animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
-      transition={{ duration: 0.8, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.8, delay: index * 0.08, ease: "easeOut" }}
       whileHover={{ y: -4, scale: 1.01 }}
       className="relative rounded-2xl p-6 group cursor-default overflow-hidden"
       style={{
@@ -106,7 +106,7 @@ export function Features() {
           <motion.h2
             initial={{ opacity: 0, y: 24 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
             className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6"
             style={{ color: "#d7cbb5" }}
           >
