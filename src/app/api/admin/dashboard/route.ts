@@ -59,7 +59,7 @@ export async function GET() {
             paidAt: { gte: startOfMonth(mes), lte: endOfMonth(mes) },
           },
           _sum: { totalAmount: true },
-        }).then((r) => ({
+        }).then((r: { _sum: { totalAmount: number | null } }) => ({
           mes: mes.toISOString().slice(0, 7),
           receita: r._sum.totalAmount ?? 0,
         }));
