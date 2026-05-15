@@ -33,13 +33,13 @@ function GridLines() {
   );
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
-  visible: (i: number) => ({
-    opacity: 1, y: 0, filter: "blur(0px)",
-    transition: { duration: 0.9, delay: i * 0.15, ease: "easeOut" },
-  }),
-};
+function fadeUp(i: number) {
+  return {
+    initial: { opacity: 0, y: 30, filter: "blur(8px)" },
+    animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+    transition: { duration: 0.9, delay: i * 0.15, ease: "easeOut" as const },
+  };
+}
 
 // Dashboard flutuante simulando automação
 function FloatingDashboard() {
@@ -186,7 +186,7 @@ export function Hero() {
           {/* Left — texto */}
           <div>
             <motion.div
-              custom={0} variants={fadeUp} initial="hidden" animate="visible"
+              {...fadeUp(0)}
               className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full"
               style={{
                 background: "rgba(215,203,181,0.06)",
@@ -204,7 +204,7 @@ export function Hero() {
             </motion.div>
 
             <motion.h1
-              custom={1} variants={fadeUp} initial="hidden" animate="visible"
+              {...fadeUp(1)}
               className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-6 glow-text"
               style={{ color: "#d7cbb5" }}
             >
@@ -213,7 +213,7 @@ export function Hero() {
             </motion.h1>
 
             <motion.p
-              custom={2} variants={fadeUp} initial="hidden" animate="visible"
+              {...fadeUp(2)}
               className="text-lg leading-relaxed mb-10 max-w-md"
               style={{ color: "rgba(215,203,181,0.5)" }}
             >
@@ -223,7 +223,7 @@ export function Hero() {
 
             {/* CTAs */}
             <motion.div
-              custom={3} variants={fadeUp} initial="hidden" animate="visible"
+              {...fadeUp(3)}
               className="flex flex-col sm:flex-row gap-4"
             >
               <motion.button
@@ -252,7 +252,7 @@ export function Hero() {
 
             {/* Stats */}
             <motion.div
-              custom={4} variants={fadeUp} initial="hidden" animate="visible"
+              {...fadeUp(4)}
               className="flex flex-wrap gap-8 mt-14"
             >
               {[
