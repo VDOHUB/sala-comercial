@@ -79,7 +79,7 @@ export async function GET() {
     where: { status: { in: ["PAID","ACTIVE","COMPLETED"] }, startAt: mesAtual },
     select: { startAt: true, endAt: true },
   });
-  const horasReservadas = reservasCompletasMes.reduce((acc: number, r) => {
+  const horasReservadas = reservasCompletasMes.reduce((acc: number, r: { startAt: Date; endAt: Date }) => {
     return acc + (r.endAt.getTime() - r.startAt.getTime()) / 3600000;
   }, 0);
   const taxaOcupacao = Math.min(100, (horasReservadas / horasDisponiveisMes) * 100);
