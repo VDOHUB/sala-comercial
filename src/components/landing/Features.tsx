@@ -1,64 +1,133 @@
+"use client";
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
+
 const features = [
   {
-    icon: "📅",
+    icon: "01",
     title: "Agendamento por período",
-    desc: "Escolha o período matutino (08h–13h) ou vespertino (14h–19h) diretamente no site. Disponibilidade em tempo real.",
+    desc: "Escolha matutino (08h–13h) ou vespertino (14h–19h) diretamente no site. Disponibilidade em tempo real sem conflitos.",
   },
   {
-    icon: "💳",
+    icon: "02",
     title: "Cartão em até 10x",
-    desc: "Parcele em até 10x sem burocracia. Após confirmação do pagamento, seu acesso é liberado automaticamente.",
+    desc: "Parcele conforme o plano escolhido. Após confirmação do pagamento, acesso liberado automaticamente.",
   },
   {
-    icon: "🔐",
-    title: "Acesso por reconhecimento facial",
-    desc: "Cadastre sua foto pelo celular após o pagamento. Na hora de entrar, apenas aproxime o rosto — sem chave, sem código.",
+    icon: "03",
+    title: "Reconhecimento facial",
+    desc: "Cadastre sua foto pelo celular após o pagamento. Na hora de entrar, aproxime o rosto — sem chave, sem código.",
   },
   {
-    icon: "⏱️",
-    title: "Acesso temporário e seguro",
-    desc: "Seu acesso é válido exatamente no período reservado. Ao encerrar, é revogado automaticamente pelo sistema.",
+    icon: "04",
+    title: "Acesso temporário inteligente",
+    desc: "Seu acesso é válido exatamente no período reservado e revogado automaticamente ao encerrar.",
   },
   {
-    icon: "🎟️",
-    title: "Vouchers de desconto",
-    desc: "Receba cupons exclusivos para parceiros e primeiras visitas. Aplicado diretamente no checkout.",
+    icon: "05",
+    title: "Vouchers e promoções",
+    desc: "Cupons exclusivos para parceiros e primeiras visitas, aplicados diretamente no checkout.",
   },
   {
-    icon: "📩",
+    icon: "06",
     title: "Notificações automáticas",
-    desc: "Confirmação por email, lembrete 30 min antes do término e recibo após o pagamento. Tudo automático.",
+    desc: "Confirmação por email, lembrete antes do término e recibo após pagamento. Tudo sem intervenção manual.",
   },
 ];
 
-export function Features() {
+function FeatureCard({ feature, index }: { feature: typeof features[0]; index: number }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+
   return (
-    <section id="sobre" className="py-24" style={{ backgroundColor: "#f5f0e8" }}>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 40, filter: "blur(8px)" }}
+      animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+      transition={{ duration: 0.8, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -4, scale: 1.01 }}
+      className="relative rounded-2xl p-6 group cursor-default overflow-hidden"
+      style={{
+        background: "rgba(255,255,255,0.025)",
+        border: "1px solid rgba(215,203,181,0.07)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
+      {/* Hover glow */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"
+        style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.06) 0%, transparent 70%)" }}
+      />
+
+      {/* Top border glow */}
+      <div
+        className="absolute top-0 left-6 right-6 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.2), transparent)" }}
+      />
+
+      <div
+        className="text-xs font-bold tracking-widest mb-5 inline-flex"
+        style={{ color: "rgba(215,203,181,0.2)" }}
+      >
+        {feature.icon}
+      </div>
+
+      <h3 className="text-base font-semibold mb-3 leading-snug" style={{ color: "#d7cbb5" }}>
+        {feature.title}
+      </h3>
+      <p className="text-sm leading-relaxed" style={{ color: "rgba(215,203,181,0.45)" }}>
+        {feature.desc}
+      </p>
+    </motion.div>
+  );
+}
+
+export function Features() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <section id="sobre" className="py-32 relative" style={{ background: "#0c0704" }}>
+      {/* Subtle separator */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <span className="font-semibold text-sm uppercase tracking-wider" style={{ color: "#321e07" }}>
+        <div ref={ref} className="text-center mb-20">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }}
+            className="text-xs font-semibold tracking-widest uppercase mb-4"
+            style={{ color: "rgba(215,203,181,0.3)" }}
+          >
             Por que escolher o VDO HUB
-          </span>
-          <h2 className="text-4xl font-bold mt-2 mb-4" style={{ color: "#321e07" }}>
-            Tudo o que você precisa,{" "}
-            <span style={{ color: "#8b6a3e" }}>sem complicação</span>
-          </h2>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: "#6b5a45" }}>
+          </motion.p>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 24 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6"
+            style={{ color: "#d7cbb5" }}
+          >
+            Tecnologia que trabalha
+            <span className="block" style={{ color: "rgba(215,203,181,0.3)" }}>por você.</span>
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="text-lg max-w-xl mx-auto"
+            style={{ color: "rgba(215,203,181,0.4)" }}
+          >
             Do agendamento ao acesso, tudo automatizado para você focar no que realmente importa.
-          </p>
+          </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="bg-white rounded-2xl p-6 shadow-sm border hover:shadow-md hover:-translate-y-1 transition-all duration-200"
-              style={{ borderColor: "#e8ddd0" }}
-            >
-              <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="text-lg font-bold mb-2" style={{ color: "#321e07" }}>{f.title}</h3>
-              <p className="leading-relaxed text-sm" style={{ color: "#6b5a45" }}>{f.desc}</p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {features.map((f, i) => (
+            <FeatureCard key={f.title} feature={f} index={i} />
           ))}
         </div>
       </div>

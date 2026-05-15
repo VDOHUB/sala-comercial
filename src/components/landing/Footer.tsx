@@ -1,47 +1,63 @@
+"use client";
+import { motion } from "framer-motion";
+
+const links = [
+  { label: "Planos", id: "planos" },
+  { label: "O espaco", id: "espaco" },
+  { label: "Como funciona", id: "como-funciona" },
+  { label: "Reservar", id: "reservar" },
+];
+
+const contact = [
+  { label: "viverdeobrahub@gmail.com" },
+  { label: "(62) 99633-2257" },
+  { label: "@vdohub_" },
+];
+
 export function Footer() {
   return (
-    <footer id="contato" className="py-14" style={{ backgroundColor: "#321e07", color: "rgba(215,203,181,0.6)" }}>
+    <footer id="contato" className="relative py-16 overflow-hidden" style={{ background: "#0c0704" }}>
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
 
           {/* Marca */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-3 mb-5">
               <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: "rgba(215,203,181,0.15)" }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: "rgba(215,203,181,0.07)", border: "1px solid rgba(215,203,181,0.1)" }}
               >
-                <span className="font-bold text-xs" style={{ color: "#d7cbb5" }}>VDO</span>
+                <span className="text-[9px] font-black tracking-wider" style={{ color: "#d7cbb5" }}>VDO</span>
               </div>
-              <span className="font-bold text-lg" style={{ color: "#d7cbb5" }}>VDO HUB</span>
+              <span className="font-semibold" style={{ color: "#d7cbb5" }}>VDO HUB</span>
             </div>
-            <p className="text-sm leading-relaxed mb-3">
-              Aluguel de sala comercial por assinatura. Espaço moderno para reuniões, atendimentos e trabalho profissional.
+            <p className="text-sm leading-relaxed mb-4" style={{ color: "rgba(215,203,181,0.35)" }}>
+              Aluguel de sala comercial por assinatura. Espaco moderno para reunioes,
+              atendimentos e trabalho profissional. Anapolis, GO.
             </p>
-            <p className="text-sm">
-              <strong style={{ color: "#d7cbb5" }}>Horários:</strong> Seg a Sex<br />
-              08h00–13h00 · 14h00–19h00
+            <p className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>
+              Seg — Sex · 08h00–13h00 · 14h00–19h00
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="font-semibold mb-4" style={{ color: "#d7cbb5" }}>Navegação</h4>
-            <ul className="space-y-2 text-sm">
-              {[
-                { label: "Planos", id: "planos" },
-                { label: "Sobre o espaço", id: "sobre" },
-                { label: "Como funciona", id: "como-funciona" },
-                { label: "Reservar agora", id: "reservar" },
-              ].map((l) => (
+            <p className="text-xs font-semibold tracking-widest uppercase mb-5" style={{ color: "rgba(215,203,181,0.25)" }}>
+              Navegacao
+            </p>
+            <ul className="space-y-3">
+              {links.map((l) => (
                 <li key={l.id}>
-                  <a
+                  <motion.a
                     href={`#${l.id}`}
-                    className="transition-colors hover:opacity-100"
-                    style={{ color: "rgba(215,203,181,0.6)" }}
+                    className="text-sm transition-colors"
+                    style={{ color: "rgba(215,203,181,0.4)" }}
+                    whileHover={{ color: "#d7cbb5", x: 2 }}
                   >
                     {l.label}
-                  </a>
+                  </motion.a>
                 </li>
               ))}
             </ul>
@@ -49,23 +65,28 @@ export function Footer() {
 
           {/* Contato */}
           <div>
-            <h4 className="font-semibold mb-4" style={{ color: "#d7cbb5" }}>Contato</h4>
-            <ul className="space-y-3 text-sm">
-              <li>✉️ viverdeobrahub@gmail.com</li>
-              <li>📞 (62) 99633-2257</li>
-              <li>📸 @vdohub_</li>
-              <li className="leading-relaxed pt-2">
-                📍 Galeria Nazir — Av. São Francisco de Assis, 181<br />
-                2º piso, sala 03 · Jundiaí, Anápolis - GO<br />
-                CEP 75110-810
-              </li>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-5" style={{ color: "rgba(215,203,181,0.25)" }}>
+              Contato
+            </p>
+            <ul className="space-y-3 mb-5">
+              {contact.map((c) => (
+                <li key={c.label} className="text-sm" style={{ color: "rgba(215,203,181,0.4)" }}>
+                  {c.label}
+                </li>
+              ))}
             </ul>
+            <p className="text-xs leading-relaxed" style={{ color: "rgba(215,203,181,0.25)" }}>
+              Galeria Nazir — Av. Sao Francisco de Assis, 181<br />
+              2 piso, sala 03 · Jundiai, Anapolis - GO<br />
+              CEP 75110-810
+            </p>
           </div>
         </div>
 
+        {/* Bottom */}
         <div
-          className="border-t pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs"
-          style={{ borderColor: "rgba(215,203,181,0.12)" }}
+          className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 text-xs"
+          style={{ borderTop: "1px solid rgba(215,203,181,0.05)", color: "rgba(215,203,181,0.2)" }}
         >
           <p>© {new Date().getFullYear()} VDO HUB. Todos os direitos reservados.</p>
           <p>Desenvolvido por Johni Michael · CNPJ 65.002.492/0001-08</p>

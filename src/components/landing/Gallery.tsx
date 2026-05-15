@@ -1,71 +1,128 @@
-// ── Substituir os placeholders pelas fotos reais quando receber ──
-// Trocar cada <div className="placeholder"> por:
-// <Image src="/images/sala-1.jpg" alt="..." fill className="object-cover" />
+"use client";
+import { useRef, useState } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 
-const photos = [
-  { id: 1, label: "Vista geral da sala" },
-  { id: 2, label: "Mesa de trabalho" },
-  { id: 3, label: "Iluminação e ambiente" },
-  { id: 4, label: "Detalhes do espaço" },
-  { id: 5, label: "Frigobar e comodidades" },
+const amenities = [
+  { icon: "—", label: "Ar-condicionado" },
+  { icon: "—", label: "Wi-Fi de alta velocidade" },
+  { icon: "—", label: "Frigobar" },
+  { icon: "—", label: "Tomadas e USB" },
+  { icon: "—", label: "Iluminacao profissional" },
+  { icon: "—", label: "Acesso facial 24h" },
 ];
 
-export function Gallery() {
+const photos = [
+  { id: 1, label: "Vista geral", span: "col-span-2 row-span-2" },
+  { id: 2, label: "Mesa de reuniao" },
+  { id: 3, label: "Ambiente" },
+  { id: 4, label: "Detalhes" },
+  { id: 5, label: "Comodidades" },
+];
+
+function PhotoPlaceholder({ label, className }: { label: string; className?: string }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <section id="espaco" className="py-24 bg-white">
+    <motion.div
+      className={`relative rounded-2xl overflow-hidden ${className ?? "aspect-square"}`}
+      style={{
+        background: "linear-gradient(135deg, rgba(50,30,7,0.8) 0%, rgba(20,12,4,0.9) 100%)",
+        border: "1px solid rgba(215,203,181,0.08)",
+      }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      whileHover={{ scale: 1.01 }}
+    >
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: "radial-gradient(circle at 50% 50%, rgba(215,203,181,0.06) 0%, transparent 70%)" }}
+        animate={{ opacity: hovered ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+      />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: "rgba(215,203,181,0.06)", border: "1px solid rgba(215,203,181,0.1)" }}
+        >
+          <span className="text-xs font-bold" style={{ color: "rgba(215,203,181,0.3)" }}>IMG</span>
+        </div>
+        <p className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>{label}</p>
+        <p className="text-xs" style={{ color: "rgba(215,203,181,0.15)" }}>Em breve</p>
+      </div>
+    </motion.div>
+  );
+}
+
+export function Gallery() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+
+  return (
+    <section id="espaco" className="py-32 relative" style={{ background: "#0c0704" }}>
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <span className="text-emerald-600 font-semibold text-sm uppercase tracking-wider">
-            O espaço
-          </span>
-          <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-4">
-            Conheça a sala
-          </h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Ambiente moderno, climatizado e equipado para reuniões, atendimentos e trabalho concentrado.
-          </p>
+        <div ref={ref} className="text-center mb-20">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }}
+            className="text-xs font-semibold tracking-widest uppercase mb-4"
+            style={{ color: "rgba(215,203,181,0.3)" }}
+          >
+            O espaco
+          </motion.p>
+          <motion.h2
+            initial={{ opacity: 0, y: 24 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
+            style={{ color: "#d7cbb5" }}
+          >
+            Conhea a sala.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="text-base max-w-lg mx-auto"
+            style={{ color: "rgba(215,203,181,0.4)" }}
+          >
+            Ambiente moderno, climatizado e equipado para reunioes, atendimentos e trabalho concentrado.
+            Galeria completa em breve.
+          </motion.p>
         </div>
 
         {/* Grid de fotos */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {/* Foto principal — ocupa 2 colunas */}
-          <div className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-5xl mb-3">🏢</div>
-              <p className="text-sm font-medium">Foto principal da sala</p>
-              <p className="text-xs mt-1 opacity-70">Aguardando imagem do cliente</p>
-            </div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-12"
+        >
+          <div className="col-span-2 row-span-2">
+            <PhotoPlaceholder label="Vista geral da sala" className="aspect-[4/3]" />
           </div>
-
-          {/* Fotos menores */}
-          {photos.slice(1).map((photo) => (
-            <div
-              key={photo.id}
-              className="relative rounded-2xl overflow-hidden aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"
-            >
-              <div className="text-center text-gray-400 p-4">
-                <div className="text-3xl mb-2">📷</div>
-                <p className="text-xs font-medium">{photo.label}</p>
-              </div>
-            </div>
+          {photos.slice(1).map((p) => (
+            <PhotoPlaceholder key={p.id} label={p.label} />
           ))}
-        </div>
+        </motion.div>
 
         {/* Amenidades */}
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { icon: "❄️", text: "Ar-condicionado" },
-            { icon: "📶", text: "Wi-Fi de alta velocidade" },
-            { icon: "🧊", text: "Frigobar" },
-            { icon: "🔌", text: "Tomadas e USB" },
-          ].map((a) => (
-            <div
-              key={a.text}
-              className="flex items-center gap-3 bg-gray-50 rounded-xl p-4"
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {amenities.map((a, i) => (
+            <motion.div
+              key={a.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.5 + i * 0.06 }}
+              className="rounded-xl p-4 text-center"
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(215,203,181,0.07)",
+              }}
             >
-              <span className="text-2xl">{a.icon}</span>
-              <span className="text-sm font-medium text-gray-700">{a.text}</span>
-            </div>
+              <p className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.5)" }}>{a.label}</p>
+            </motion.div>
           ))}
         </div>
       </div>

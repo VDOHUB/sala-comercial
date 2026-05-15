@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
-  title: "Sala Comercial — Viver de Obra",
-  description: "Espaço moderno e equipado para reuniões, atendimentos e trabalho. Reserve online com acesso imediato.",
+  title: "VDO HUB — Aluguel de Sala por Assinatura",
+  description: "Espaço premium com acesso por reconhecimento facial, reserva online e automação completa. Anápolis, GO.",
   openGraph: {
-    title: "Sala Comercial — Viver de Obra",
-    description: "Reserve sua sala com facilidade. Acesso por reconhecimento facial, pagamento online e confirmação imediata.",
+    title: "VDO HUB — Aluguel de Sala por Assinatura",
+    description: "Reserve sua sala. Acesso facial, pagamento online, confirmação imediata.",
     url: "https://viverdeobra.com",
-    siteName: "Viver de Obra",
+    siteName: "VDO HUB",
     locale: "pt_BR",
     type: "website",
   },
@@ -19,8 +24,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${geist.variable} h-full`}>
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+    <html lang="pt-BR" className={`${jakarta.variable} h-full`}>
+      <body className="min-h-full flex flex-col antialiased bg-[#0c0704]">
+        <SmoothScroll>{children}</SmoothScroll>
+      </body>
     </html>
   );
 }
