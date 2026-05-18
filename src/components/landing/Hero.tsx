@@ -32,10 +32,10 @@ function DashboardCard() {
     <div
       className="relative rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(12,7,4,0.78)",
+        background: "rgba(12,7,4,0.72)",
         border: "1px solid rgba(215,203,181,0.14)",
-        backdropFilter: "blur(24px)",
-        boxShadow: "0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(215,203,181,0.08)",
+        backdropFilter: "blur(28px)",
+        boxShadow: "0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(215,203,181,0.08)",
       }}
     >
       <div
@@ -51,8 +51,8 @@ function DashboardCard() {
 
       <div className="p-4 space-y-3">
         {[
-          { label: "Período Matutino", status: "Disponível", dot: "#4ade80", bar: 0.3 },
-          { label: "Período Vespertino", status: "Reservado", dot: "#f59e0b", bar: 0.85 },
+          { label: "Período Matutino",   status: "Disponível", dot: "#4ade80", bar: 0.3 },
+          { label: "Período Vespertino", status: "Reservado",  dot: "#f59e0b", bar: 0.85 },
         ].map((item) => (
           <div
             key={item.label}
@@ -118,26 +118,40 @@ function DashboardCard() {
   );
 }
 
-function PhotoPanel() {
+export function Hero() {
+  const containerRef = useRef<HTMLElement>(null);
   const [idx, setIdx] = useState(0);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 30, damping: 25 });
+  const springY = useSpring(mouseY, { stiffness: 30, damping: 25 });
 
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % heroPanelPhotos.length), 3500);
+    const t = setInterval(() => setIdx((i) => (i + 1) % heroPanelPhotos.length), 4000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    const handleMouse = (e: MouseEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      mouseX.set((e.clientX - rect.left - rect.width / 2) * 0.012);
+      mouseY.set((e.clientY - rect.top - rect.height / 2) * 0.012);
+    };
+    window.addEventListener("mousemove", handleMouse, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouse);
+  }, [mouseX, mouseY]);
 
   const scene = heroPanelPhotos[idx];
 
   return (
-    <motion.div
-      className="animate-float-slow"
-      initial={{ opacity: 0, y: 20, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 1.2, delay: 1.2, ease: "easeOut" }}
+    <section
+      ref={containerRef}
+      className="relative min-h-screen flex items-center overflow-hidden"
+      style={{ background: "#f5f0e8" }}
     >
-      <div className="relative rounded-3xl overflow-hidden" style={{ width: 340, height: 500 }}>
-
-        {/* Gradiente de fundo (fallback enquanto foto não existe) */}
+      {/* ── Foto de fundo — metade direita da tela (só desktop) ── */}
+      <div className="absolute inset-y-0 right-0 w-1/2 hidden lg:block overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={idx}
@@ -145,35 +159,43 @@ function PhotoPanel() {
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 1.1, ease: "easeOut" }}
           >
-            {/* Gradiente fallback */}
+            {/* fallback enquanto foto não carrega */}
             <div className="absolute inset-0" style={{ background: scene.fallback }} />
-
-            {/* Foto real — sobrepõe o gradiente quando o arquivo existir */}
             <Image
               src={scene.src}
               alt={scene.label}
               fill
               className="object-cover"
-              sizes="340px"
+              sizes="50vw"
               priority={idx === 0}
-              onError={() => {/* foto ausente: gradiente fica visível */}}
+              onError={() => {}}
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* Overlay inferior para legibilidade */}
+        {/* Fade da esquerda — funde com o fundo beige */}
+        <div
+          className="absolute inset-y-0 left-0 w-40 pointer-events-none z-10"
+          style={{ background: "linear-gradient(to right, #f5f0e8 0%, transparent 100%)" }}
+        />
+        {/* Fade superior */}
+        <div
+          className="absolute top-0 left-0 right-0 h-28 pointer-events-none z-10"
+          style={{ background: "linear-gradient(to bottom, #f5f0e8 0%, transparent 100%)" }}
+        />
+        {/* Overlay escuro sutil para contraste */}
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "linear-gradient(to top, rgba(8,4,2,0.85) 0%, rgba(8,4,2,0.25) 45%, transparent 75%)" }}
+          style={{ background: "rgba(12,7,4,0.18)" }}
         />
 
-        {/* Label da cena */}
+        {/* Label da foto */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={`label-${idx}`}
-            className="absolute top-4 left-4"
+            key={`lbl-${idx}`}
+            className="absolute top-8 left-16 z-20"
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -182,9 +204,9 @@ function PhotoPanel() {
             <span
               className="text-xs font-medium px-2.5 py-1 rounded-full"
               style={{
-                background: "rgba(12,7,4,0.5)",
-                color: "rgba(215,203,181,0.65)",
-                border: "1px solid rgba(215,203,181,0.1)",
+                background: "rgba(12,7,4,0.45)",
+                color: "rgba(215,203,181,0.75)",
+                border: "1px solid rgba(215,203,181,0.12)",
                 backdropFilter: "blur(8px)",
               }}
             >
@@ -194,67 +216,40 @@ function PhotoPanel() {
         </AnimatePresence>
 
         {/* Dots */}
-        <div className="absolute top-4 right-4 flex items-center gap-1.5">
+        <div className="absolute bottom-8 right-8 flex items-center gap-2 z-20">
           {heroPanelPhotos.map((_, i) => (
             <button
               key={i}
               onClick={() => setIdx(i)}
               className="rounded-full transition-all duration-300"
               style={{
-                width: i === idx ? 16 : 5,
-                height: 5,
-                background: i === idx ? "rgba(215,203,181,0.85)" : "rgba(215,203,181,0.25)",
+                width: i === idx ? 20 : 6,
+                height: 6,
+                background: i === idx ? "rgba(215,203,181,0.85)" : "rgba(215,203,181,0.3)",
               }}
             />
           ))}
         </div>
-
-        {/* Dashboard card */}
-        <div className="absolute bottom-5 left-5 right-5">
-          <DashboardCard />
-        </div>
       </div>
-    </motion.div>
-  );
-}
 
-export function Hero() {
-  const containerRef = useRef<HTMLElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 30, damping: 25 });
-  const springY = useSpring(mouseY, { stiffness: 30, damping: 25 });
-
-  useEffect(() => {
-    const handleMouse = (e: MouseEvent) => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      mouseX.set((e.clientX - rect.left - rect.width / 2) * 0.015);
-      mouseY.set((e.clientY - rect.top - rect.height / 2) * 0.015);
-    };
-    window.addEventListener("mousemove", handleMouse, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouse);
-  }, [mouseX, mouseY]);
-
-  return (
-    <section ref={containerRef} className="relative min-h-screen flex items-center overflow-hidden" style={{ background: "#f5f0e8" }}>
-
+      {/* Orb decorativo */}
       <motion.div
-        className="absolute pointer-events-none"
+        className="absolute pointer-events-none hidden lg:block"
         style={{
-          left: "5%", top: "15%",
-          width: 600, height: 600,
-          background: "radial-gradient(circle, rgba(139,106,62,0.08) 0%, transparent 70%)",
+          left: "5%", top: "20%",
+          width: 500, height: 500,
+          background: "radial-gradient(circle, rgba(139,106,62,0.07) 0%, transparent 70%)",
           filter: "blur(60px)",
         }}
-        animate={{ scale: [1, 1.12, 1], opacity: [0.08, 0.14, 0.08] }}
+        animate={{ scale: [1, 1.12, 1] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
 
       <GridLines />
 
+      {/* ── Conteúdo ── */}
       <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 w-full pt-28 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-0 items-center">
 
           {/* Esquerda — texto */}
           <div className="text-center lg:text-left">
@@ -324,8 +319,8 @@ export function Hero() {
               className="flex flex-wrap gap-6 sm:gap-8 mt-10 sm:mt-14 justify-center lg:justify-start"
             >
               {[
-                { value: "5h", label: "por período" },
-                { value: "10x", label: "sem juros" },
+                { value: "5h",     label: "por período" },
+                { value: "10x",    label: "sem juros" },
                 { value: "Seg–Sex", label: "disponível" },
               ].map((s) => (
                 <div key={s.label}>
@@ -336,18 +331,27 @@ export function Hero() {
             </motion.div>
           </div>
 
-          {/* Direita — painel de fotos (só desktop) */}
+          {/* Direita — dashboard flutuante sobre a foto (só desktop) */}
           <motion.div
-            className="hidden lg:flex justify-center"
+            className="hidden lg:flex items-center justify-center"
             style={{ x: springX, y: springY }}
           >
-            <PhotoPanel />
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 1.1, delay: 1.0, ease: "easeOut" }}
+              style={{ width: 300 }}
+            >
+              <DashboardCard />
+            </motion.div>
           </motion.div>
+
         </div>
       </div>
 
+      {/* Fade inferior */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-10"
         style={{ background: "linear-gradient(to bottom, transparent, #f5f0e8)" }}
       />
     </section>
