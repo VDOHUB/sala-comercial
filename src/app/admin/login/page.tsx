@@ -24,7 +24,7 @@ export default function LoginPage() {
       setError("Email ou senha incorretos.");
       setLoading(false);
     } else {
-      router.push("/admin/dashboard");
+      window.location.href = "/admin/dashboard";
     }
   }
 
