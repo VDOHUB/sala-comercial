@@ -113,30 +113,6 @@ export function Gallery() {
               style={{ background: "linear-gradient(to top, rgba(8,4,2,0.5) 0%, transparent 50%)" }}
             />
 
-            {/* Label da foto */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`lbl-${current.id}`}
-                className="absolute bottom-5 left-6"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.5 }}
-              >
-                <span
-                  className="text-sm font-medium px-3 py-1.5 rounded-xl"
-                  style={{
-                    background: "rgba(12,7,4,0.55)",
-                    color: "rgba(215,203,181,0.85)",
-                    backdropFilter: "blur(12px)",
-                    border: "1px solid rgba(215,203,181,0.1)",
-                  }}
-                >
-                  {current.label}
-                </span>
-              </motion.div>
-            </AnimatePresence>
-
             {/* Contador */}
             <div className="absolute bottom-5 right-6">
               <span className="text-xs" style={{ color: "rgba(215,203,181,0.4)" }}>

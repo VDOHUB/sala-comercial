@@ -191,30 +191,6 @@ export function Hero() {
           style={{ background: "rgba(12,7,4,0.18)" }}
         />
 
-        {/* Label da foto */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`lbl-${idx}`}
-            className="absolute top-8 left-16 z-20"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span
-              className="text-xs font-medium px-2.5 py-1 rounded-full"
-              style={{
-                background: "rgba(12,7,4,0.45)",
-                color: "rgba(215,203,181,0.75)",
-                border: "1px solid rgba(215,203,181,0.12)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              {scene.label}
-            </span>
-          </motion.div>
-        </AnimatePresence>
-
         {/* Dots */}
         <div className="absolute bottom-8 right-8 flex items-center gap-2 z-20">
           {heroPanelPhotos.map((_, i) => (
