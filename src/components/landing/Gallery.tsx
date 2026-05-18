@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 
 const amenities = [
@@ -11,38 +12,47 @@ const amenities = [
   "Acesso facial",
 ];
 
-// Placeholders até as fotos reais chegarem
-// Para usar fotos reais: substitua os gradients por <Image src="..." fill className="object-cover" />
+// ─── FOTOS DA SALA ───────────────────────────────────────────────────────────
+// Coloque as imagens em: public/sala/
+// Nomes esperados:
+//   foto-01.jpg  →  Vista geral da sala
+//   foto-02.jpg  →  Mesa de reunião
+//   foto-03.jpg  →  Ambiente climatizado
+//   foto-04.jpg  →  Detalhes da sala
+//   foto-05.jpg  →  Comodidades
+// Qualquer formato funciona (jpg, jpeg, png, webp).
+// Enquanto a foto não existir o gradiente aparece no lugar automaticamente.
+// ─────────────────────────────────────────────────────────────────────────────
 const photos = [
   {
     id: 1,
+    src: "/sala/foto-01.jpg",
     label: "Vista geral da sala",
     bg: "linear-gradient(135deg, #3d2010 0%, #5a3822 40%, #2a1608 100%)",
-    accent: "radial-gradient(ellipse at 40% 60%, rgba(139,106,62,0.4) 0%, transparent 55%)",
   },
   {
     id: 2,
+    src: "/sala/foto-02.jpg",
     label: "Mesa de reunião",
     bg: "linear-gradient(160deg, #1e1108 0%, #3a2412 50%, #4d3218 100%)",
-    accent: "radial-gradient(ellipse at 65% 35%, rgba(90,56,34,0.45) 0%, transparent 50%)",
   },
   {
     id: 3,
+    src: "/sala/foto-03.jpg",
     label: "Ambiente climatizado",
     bg: "linear-gradient(135deg, #2a1a0a 0%, #4a2e14 45%, #3d2010 100%)",
-    accent: "radial-gradient(ellipse at 30% 70%, rgba(100,70,30,0.35) 0%, transparent 55%)",
   },
   {
     id: 4,
+    src: "/sala/foto-04.jpg",
     label: "Detalhes da sala",
     bg: "linear-gradient(150deg, #321e07 0%, #1a0e05 50%, #4d3015 100%)",
-    accent: "radial-gradient(ellipse at 70% 30%, rgba(139,106,62,0.3) 0%, transparent 50%)",
   },
   {
     id: 5,
+    src: "/sala/foto-05.jpg",
     label: "Comodidades",
     bg: "linear-gradient(140deg, #1a0e05 0%, #3a2412 40%, #5a3822 100%)",
-    accent: "radial-gradient(ellipse at 50% 50%, rgba(80,50,20,0.4) 0%, transparent 60%)",
   },
 ];
 
@@ -95,7 +105,7 @@ export function Gallery() {
           </motion.p>
         </div>
 
-        {/* Slideshow único */}
+        {/* Slideshow */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -112,7 +122,7 @@ export function Gallery() {
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
           >
-            {/* Foto ciclando */}
+            {/* Slides */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.id}
@@ -122,18 +132,29 @@ export function Gallery() {
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.9, ease: "easeOut" }}
               >
+                {/* Gradiente fallback */}
                 <div className="absolute inset-0" style={{ background: current.bg }} />
-                <div className="absolute inset-0" style={{ background: current.accent }} />
+
+                {/* Foto real — sobrepõe quando o arquivo existir */}
+                <Image
+                  src={current.src}
+                  alt={current.label}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1152px"
+                  priority={current.id === 1}
+                  onError={() => {/* foto ausente: gradiente fica visível */}}
+                />
               </motion.div>
             </AnimatePresence>
 
-            {/* Overlay sutil */}
+            {/* Overlay de legibilidade */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{ background: "linear-gradient(to top, rgba(8,4,2,0.5) 0%, transparent 50%)" }}
             />
 
-            {/* Label da foto atual */}
+            {/* Label da foto */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={`lbl-${current.id}`}
@@ -164,13 +185,13 @@ export function Gallery() {
               </span>
             </div>
 
-            {/* Dots navegação */}
+            {/* Dots */}
             <div className="absolute top-5 left-1/2 -translate-x-1/2 flex items-center gap-2">
               {photos.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => { setActive(i); setPaused(true); }}
-                  className="rounded-full transition-all duration-400"
+                  className="rounded-full transition-all duration-300"
                   style={{
                     width: i === active ? 24 : 6,
                     height: 6,
@@ -180,19 +201,29 @@ export function Gallery() {
               ))}
             </div>
 
-            {/* Setas */}
+            {/* Seta esquerda */}
             <button
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all"
-              style={{ background: "rgba(12,7,4,0.4)", border: "1px solid rgba(215,203,181,0.1)", backdropFilter: "blur(8px)" }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              style={{
+                background: "rgba(12,7,4,0.4)",
+                border: "1px solid rgba(215,203,181,0.1)",
+                backdropFilter: "blur(8px)",
+              }}
               onClick={() => { setActive((i) => (i - 1 + photos.length) % photos.length); setPaused(true); }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M8.5 2.5L4.5 7l4 4.5" stroke="rgba(215,203,181,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+
+            {/* Seta direita */}
             <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all"
-              style={{ background: "rgba(12,7,4,0.4)", border: "1px solid rgba(215,203,181,0.1)", backdropFilter: "blur(8px)" }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              style={{
+                background: "rgba(12,7,4,0.4)",
+                border: "1px solid rgba(215,203,181,0.1)",
+                backdropFilter: "blur(8px)",
+              }}
               onClick={() => { setActive((i) => (i + 1) % photos.length); setPaused(true); }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

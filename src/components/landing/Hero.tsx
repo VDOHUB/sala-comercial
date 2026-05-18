@@ -1,28 +1,34 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
+import Image from "next/image";
 import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
 
-// Placeholders atmosféricos — substituir por <Image src="..." /> quando as fotos chegarem
+// ─── FOTOS DA SALA ───────────────────────────────────────────────────────────
+// Coloque as imagens em: public/sala/
+// Nomes esperados: foto-01.jpg  foto-02.jpg  foto-03.jpg  foto-04.jpg
+// Qualquer formato funciona (jpg, jpeg, png, webp).
+// Enquanto a foto não existir, o gradiente de fundo aparece no lugar.
+// ─────────────────────────────────────────────────────────────────────────────
 const roomScenes = [
   {
-    bg: "linear-gradient(135deg, #3d2010 0%, #5a3822 40%, #2a1608 100%)",
-    overlay: "radial-gradient(ellipse at 30% 60%, rgba(139,106,62,0.35) 0%, transparent 60%)",
+    src: "/sala/foto-01.jpg",
     label: "Espaço de trabalho",
+    bg: "linear-gradient(135deg, #3d2010 0%, #5a3822 40%, #2a1608 100%)",
   },
   {
-    bg: "linear-gradient(160deg, #1e1108 0%, #3a2412 50%, #4d3218 100%)",
-    overlay: "radial-gradient(ellipse at 70% 40%, rgba(90,56,34,0.4) 0%, transparent 55%)",
+    src: "/sala/foto-02.jpg",
     label: "Mesa de reunião",
+    bg: "linear-gradient(160deg, #1e1108 0%, #3a2412 50%, #4d3218 100%)",
   },
   {
-    bg: "linear-gradient(135deg, #2a1a0a 0%, #4a2e14 45%, #3d2010 100%)",
-    overlay: "radial-gradient(ellipse at 50% 70%, rgba(100,70,30,0.3) 0%, transparent 60%)",
+    src: "/sala/foto-03.jpg",
     label: "Ambiente climatizado",
+    bg: "linear-gradient(135deg, #2a1a0a 0%, #4a2e14 45%, #3d2010 100%)",
   },
   {
-    bg: "linear-gradient(150deg, #321e07 0%, #1a0e05 50%, #4d3015 100%)",
-    overlay: "radial-gradient(ellipse at 20% 30%, rgba(139,106,62,0.25) 0%, transparent 50%)",
+    src: "/sala/foto-04.jpg",
     label: "Detalhes da sala",
+    bg: "linear-gradient(150deg, #321e07 0%, #1a0e05 50%, #4d3015 100%)",
   },
 ];
 
@@ -54,13 +60,12 @@ function DashboardCard() {
     <div
       className="relative rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(12,7,4,0.75)",
+        background: "rgba(12,7,4,0.78)",
         border: "1px solid rgba(215,203,181,0.14)",
         backdropFilter: "blur(24px)",
         boxShadow: "0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(215,203,181,0.08)",
       }}
     >
-      {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3"
         style={{ borderBottom: "1px solid rgba(215,203,181,0.07)" }}
@@ -72,7 +77,6 @@ function DashboardCard() {
         <span className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>ao vivo</span>
       </div>
 
-      {/* Status cards */}
       <div className="p-4 space-y-3">
         {[
           { label: "Período Matutino", status: "Disponível", dot: "#4ade80", bar: 0.3 },
@@ -102,7 +106,6 @@ function DashboardCard() {
           </div>
         ))}
 
-        {/* Último acesso */}
         <div
           className="rounded-xl p-3"
           style={{ background: "rgba(215,203,181,0.05)", border: "1px solid rgba(215,203,181,0.07)" }}
@@ -123,7 +126,6 @@ function DashboardCard() {
           </div>
         </div>
 
-        {/* Próxima reserva */}
         <div
           className="rounded-xl px-3 py-2.5 flex items-center justify-between"
           style={{ background: "rgba(215,203,181,0.07)", border: "1px solid rgba(215,203,181,0.12)" }}
@@ -152,15 +154,18 @@ function PhotoPanel() {
     return () => clearInterval(t);
   }, []);
 
+  const scene = roomScenes[idx];
+
   return (
     <motion.div
-      className="animate-float-slow relative"
+      className="animate-float-slow"
       initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 1.2, delay: 1.2, ease: "easeOut" }}
     >
       <div className="relative rounded-3xl overflow-hidden" style={{ width: 340, height: 500 }}>
-        {/* Cycling room photos */}
+
+        {/* Gradiente de fundo (fallback enquanto foto não existe) */}
         <AnimatePresence mode="wait">
           <motion.div
             key={idx}
@@ -170,18 +175,29 @@ function PhotoPanel() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 1, ease: "easeOut" }}
           >
-            <div className="absolute inset-0" style={{ background: roomScenes[idx].bg }} />
-            <div className="absolute inset-0" style={{ background: roomScenes[idx].overlay }} />
+            {/* Gradiente fallback */}
+            <div className="absolute inset-0" style={{ background: scene.bg }} />
+
+            {/* Foto real — sobrepõe o gradiente quando o arquivo existir */}
+            <Image
+              src={scene.src}
+              alt={scene.label}
+              fill
+              className="object-cover"
+              sizes="340px"
+              priority={idx === 0}
+              onError={() => {/* foto ausente: gradiente fica visível */}}
+            />
           </motion.div>
         </AnimatePresence>
 
-        {/* Gradient overlay bottom — para legibilidade do card */}
+        {/* Overlay inferior para legibilidade */}
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "linear-gradient(to top, rgba(8,4,2,0.85) 0%, rgba(8,4,2,0.3) 45%, transparent 75%)" }}
+          style={{ background: "linear-gradient(to top, rgba(8,4,2,0.85) 0%, rgba(8,4,2,0.25) 45%, transparent 75%)" }}
         />
 
-        {/* Label da foto */}
+        {/* Label da cena */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`label-${idx}`}
@@ -193,14 +209,19 @@ function PhotoPanel() {
           >
             <span
               className="text-xs font-medium px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(12,7,4,0.5)", color: "rgba(215,203,181,0.6)", border: "1px solid rgba(215,203,181,0.1)", backdropFilter: "blur(8px)" }}
+              style={{
+                background: "rgba(12,7,4,0.5)",
+                color: "rgba(215,203,181,0.65)",
+                border: "1px solid rgba(215,203,181,0.1)",
+                backdropFilter: "blur(8px)",
+              }}
             >
-              {roomScenes[idx].label}
+              {scene.label}
             </span>
           </motion.div>
         </AnimatePresence>
 
-        {/* Dots indicator */}
+        {/* Dots */}
         <div className="absolute top-4 right-4 flex items-center gap-1.5">
           {roomScenes.map((_, i) => (
             <button
@@ -210,13 +231,13 @@ function PhotoPanel() {
               style={{
                 width: i === idx ? 16 : 5,
                 height: 5,
-                background: i === idx ? "rgba(215,203,181,0.8)" : "rgba(215,203,181,0.25)",
+                background: i === idx ? "rgba(215,203,181,0.85)" : "rgba(215,203,181,0.25)",
               }}
             />
           ))}
         </div>
 
-        {/* Dashboard card no bottom */}
+        {/* Dashboard card */}
         <div className="absolute bottom-5 left-5 right-5">
           <DashboardCard />
         </div>
@@ -246,7 +267,6 @@ export function Hero() {
   return (
     <section ref={containerRef} className="relative min-h-screen flex items-center overflow-hidden" style={{ background: "#f5f0e8" }}>
 
-      {/* Subtle orb */}
       <motion.div
         className="absolute pointer-events-none"
         style={{
@@ -258,33 +278,18 @@ export function Hero() {
         animate={{ scale: [1, 1.12, 1], opacity: [0.08, 0.14, 0.08] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute pointer-events-none"
-        style={{
-          right: "0%", bottom: "10%",
-          width: 400, height: 400,
-          background: "radial-gradient(circle, rgba(50,30,7,0.06) 0%, transparent 70%)",
-          filter: "blur(50px)",
-        }}
-        animate={{ scale: [1, 1.15, 1] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-      />
 
-      {/* Grid */}
       <GridLines />
 
       <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 w-full pt-28 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-          {/* Left — texto */}
+          {/* Esquerda — texto */}
           <div className="text-center lg:text-left">
             <motion.div
               {...fadeUp(0)}
               className="inline-flex items-center gap-2 mb-6 sm:mb-8 px-4 py-2 rounded-full"
-              style={{
-                background: "rgba(26,14,5,0.06)",
-                border: "1px solid rgba(26,14,5,0.1)",
-              }}
+              style={{ background: "rgba(26,14,5,0.06)", border: "1px solid rgba(26,14,5,0.1)" }}
             >
               <motion.span
                 className="w-1.5 h-1.5 rounded-full bg-green-500"
@@ -314,7 +319,6 @@ export function Hero() {
               automação completa. Do agendamento ao acesso — sem fricção.
             </motion.p>
 
-            {/* CTAs */}
             <motion.div
               {...fadeUp(3)}
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
@@ -343,7 +347,6 @@ export function Hero() {
               </motion.button>
             </motion.div>
 
-            {/* Stats */}
             <motion.div
               {...fadeUp(4)}
               className="flex flex-wrap gap-6 sm:gap-8 mt-10 sm:mt-14 justify-center lg:justify-start"
@@ -361,7 +364,7 @@ export function Hero() {
             </motion.div>
           </div>
 
-          {/* Right — painel de fotos com dashboard (só desktop) */}
+          {/* Direita — painel de fotos (só desktop) */}
           <motion.div
             className="hidden lg:flex justify-center"
             style={{ x: springX, y: springY }}
@@ -371,7 +374,6 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Bottom fade para próxima seção */}
       <div
         className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
         style={{ background: "linear-gradient(to bottom, transparent, #f5f0e8)" }}
