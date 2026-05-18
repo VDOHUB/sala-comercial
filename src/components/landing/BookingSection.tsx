@@ -124,18 +124,48 @@ export function BookingSection() {
   }
 
   return (
-    <section id="reservar" className="py-32 relative" style={{ background: "#0c0704" }}>
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+    <section id="reservar" className="py-24 sm:py-32 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0c0704 0%, #1a0e05 40%, #1f1008 60%, #0c0704 100%)" }}>
 
-      {/* Ambient */}
+      {/* Bordas superiores e inferiores de destaque */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.2), transparent)" }} />
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.1), transparent)" }} />
+
+      {/* Glow central grande */}
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] pointer-events-none"
-        style={{ background: "radial-gradient(ellipse, rgba(215,203,181,0.03) 0%, transparent 70%)", filter: "blur(60px)" }}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        style={{
+          width: 900,
+          height: 600,
+          background: "radial-gradient(ellipse, rgba(139,106,62,0.18) 0%, rgba(215,203,181,0.06) 40%, transparent 70%)",
+          filter: "blur(40px)",
+        }}
       />
 
-      <div className="max-w-2xl mx-auto px-6">
+      {/* Glow lateral esquerdo */}
+      <div
+        className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
+        style={{
+          width: 300,
+          height: 600,
+          background: "radial-gradient(ellipse, rgba(215,203,181,0.05) 0%, transparent 70%)",
+          filter: "blur(60px)",
+        }}
+      />
+
+      {/* Glow lateral direito */}
+      <div
+        className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"
+        style={{
+          width: 300,
+          height: 600,
+          background: "radial-gradient(ellipse, rgba(215,203,181,0.05) 0%, transparent 70%)",
+          filter: "blur(60px)",
+        }}
+      />
+
+      <div className="max-w-2xl mx-auto px-5 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "rgba(215,203,181,0.3)" }}>
             Reserve agora
           </p>
@@ -178,17 +208,17 @@ export function BookingSection() {
 
         {/* Card container */}
         <div
-          className="relative rounded-3xl p-8 overflow-hidden"
+          className="relative rounded-3xl p-6 sm:p-8 overflow-hidden"
           style={{
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(215,203,181,0.08)",
-            backdropFilter: "blur(20px)",
-            boxShadow: "0 40px 80px rgba(0,0,0,0.4)",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(215,203,181,0.14)",
+            backdropFilter: "blur(24px)",
+            boxShadow: "0 0 0 1px rgba(215,203,181,0.04), 0 40px 80px rgba(0,0,0,0.5), 0 0 60px rgba(139,106,62,0.08)",
           }}
         >
           <div
             className="absolute top-0 left-8 right-8 h-px"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.1), transparent)" }}
+            style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.25), transparent)" }}
           />
 
           <AnimatePresence mode="wait">
