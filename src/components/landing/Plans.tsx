@@ -50,12 +50,12 @@ export function Plans() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="planos" className="py-24 sm:py-32 relative" style={{ background: "#0c0704" }}>
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+    <section id="planos" className="py-24 sm:py-32 relative" style={{ background: "#f5f0e8" }}>
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(26,14,5,0.08), transparent)" }} />
 
       <div
         className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(ellipse, rgba(215,203,181,0.04) 0%, transparent 70%)", filter: "blur(40px)" }}
+        style={{ background: "radial-gradient(ellipse, rgba(139,106,62,0.07) 0%, transparent 70%)", filter: "blur(40px)" }}
       />
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
@@ -65,7 +65,7 @@ export function Plans() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
             className="text-xs font-semibold tracking-widest uppercase mb-4"
-            style={{ color: "rgba(215,203,181,0.3)" }}
+            style={{ color: "rgba(26,14,5,0.3)" }}
           >
             Planos de assinatura
           </motion.p>
@@ -75,7 +75,7 @@ export function Plans() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
             className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
-            style={{ color: "#d7cbb5" }}
+            style={{ color: "#1a0e05" }}
           >
             Escolha seu plano.
           </motion.h2>
@@ -85,9 +85,9 @@ export function Plans() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-sm sm:text-base max-w-md mx-auto"
-            style={{ color: "rgba(215,203,181,0.4)" }}
+            style={{ color: "rgba(26,14,5,0.45)" }}
           >
-            Cada período equivale a <strong style={{ color: "rgba(215,203,181,0.65)" }}>5 horas</strong> de uso.
+            Cada período equivale a <strong style={{ color: "rgba(26,14,5,0.7)" }}>5 horas</strong> de uso.
             Matutino (08h–13h) ou vespertino (14h–19h). Pagamento via cartão.
           </motion.p>
         </div>
@@ -102,30 +102,36 @@ export function Plans() {
               whileHover={{ y: -6, scale: 1.02 }}
               className="relative rounded-2xl p-5 sm:p-6 flex flex-col overflow-hidden group"
               style={plan.highlight ? {
-                background: "rgba(215,203,181,0.07)",
-                border: "1px solid rgba(215,203,181,0.18)",
-                boxShadow: "0 0 60px rgba(215,203,181,0.06), inset 0 1px 0 rgba(215,203,181,0.1)",
+                background: "#1a0e05",
+                border: "1px solid rgba(26,14,5,0.8)",
+                boxShadow: "0 20px 60px rgba(26,14,5,0.18), inset 0 1px 0 rgba(215,203,181,0.08)",
               } : {
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(215,203,181,0.07)",
+                background: "rgba(26,14,5,0.04)",
+                border: "1px solid rgba(26,14,5,0.07)",
               }}
             >
               {plan.highlight && (
                 <div
                   className="absolute top-0 left-0 right-0 h-px"
-                  style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.4), transparent)" }}
+                  style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.35), transparent)" }}
                 />
               )}
 
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
-                style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.04) 0%, transparent 60%)" }}
+                style={{ background: plan.highlight
+                  ? "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.05) 0%, transparent 60%)"
+                  : "radial-gradient(circle at 50% 0%, rgba(26,14,5,0.04) 0%, transparent 60%)"
+                }}
               />
 
               {plan.tag ? (
                 <div
                   className="inline-flex self-start mb-5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide"
-                  style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5", border: "1px solid rgba(215,203,181,0.15)" }}
+                  style={plan.highlight
+                    ? { background: "rgba(215,203,181,0.12)", color: "#d7cbb5", border: "1px solid rgba(215,203,181,0.18)" }
+                    : { background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }
+                  }
                 >
                   {plan.tag}
                 </div>
@@ -133,32 +139,37 @@ export function Plans() {
                 <div className="mb-10" />
               )}
 
-              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "rgba(215,203,181,0.3)" }}>
+              <p className="text-xs font-semibold tracking-widest uppercase mb-4"
+                style={{ color: plan.highlight ? "rgba(215,203,181,0.35)" : "rgba(26,14,5,0.28)" }}>
                 {plan.name}
               </p>
 
-              <p className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-1" style={{ color: "#d7cbb5" }}>
+              <p className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-1"
+                style={{ color: plan.highlight ? "#d7cbb5" : "#1a0e05" }}>
                 R${plan.price.toLocaleString("pt-BR")}
               </p>
-              <p className="text-xs mb-6" style={{ color: "rgba(215,203,181,0.35)" }}>
+              <p className="text-xs mb-6"
+                style={{ color: plan.highlight ? "rgba(215,203,181,0.35)" : "rgba(26,14,5,0.38)" }}>
                 ou {plan.installments} sem juros
               </p>
 
               <div className="space-y-2 mb-8">
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full" style={{ background: "rgba(215,203,181,0.3)" }} />
-                  <span className="text-sm" style={{ color: "rgba(215,203,181,0.55)" }}>
+                  <div className="w-1 h-1 rounded-full" style={{ background: plan.highlight ? "rgba(215,203,181,0.3)" : "rgba(26,14,5,0.25)" }} />
+                  <span className="text-sm" style={{ color: plan.highlight ? "rgba(215,203,181,0.6)" : "rgba(26,14,5,0.55)" }}>
                     {plan.periods} período{plan.periods > 1 ? "s" : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full" style={{ background: "rgba(215,203,181,0.3)" }} />
-                  <span className="text-sm" style={{ color: "rgba(215,203,181,0.55)" }}>Validade: {plan.validity}</span>
+                  <div className="w-1 h-1 rounded-full" style={{ background: plan.highlight ? "rgba(215,203,181,0.3)" : "rgba(26,14,5,0.25)" }} />
+                  <span className="text-sm" style={{ color: plan.highlight ? "rgba(215,203,181,0.6)" : "rgba(26,14,5,0.55)" }}>
+                    Validade: {plan.validity}
+                  </span>
                 </div>
                 {plan.economy && (
                   <div className="flex items-center gap-2">
                     <div className="w-1 h-1 rounded-full" style={{ background: "#4ade80" }} />
-                    <span className="text-sm" style={{ color: "rgba(74,222,128,0.7)" }}>{plan.economy}</span>
+                    <span className="text-sm" style={{ color: "rgba(74,222,128,0.8)" }}>{plan.economy}</span>
                   </div>
                 )}
               </div>
@@ -168,15 +179,15 @@ export function Plans() {
                 className="mt-auto w-full py-3 rounded-xl text-sm font-semibold"
                 style={plan.highlight ? {
                   background: "#d7cbb5",
-                  color: "#321e07",
+                  color: "#1a0e05",
                 } : {
-                  background: "rgba(215,203,181,0.07)",
-                  color: "rgba(215,203,181,0.7)",
-                  border: "1px solid rgba(215,203,181,0.1)",
+                  background: "rgba(26,14,5,0.07)",
+                  color: "rgba(26,14,5,0.65)",
+                  border: "1px solid rgba(26,14,5,0.1)",
                 }}
                 whileHover={plan.highlight
-                  ? { boxShadow: "0 0 24px rgba(215,203,181,0.2)" }
-                  : { background: "rgba(215,203,181,0.12)" }
+                  ? { boxShadow: "0 0 24px rgba(215,203,181,0.3)" }
+                  : { background: "rgba(26,14,5,0.11)" }
                 }
                 whileTap={{ scale: 0.97 }}
               >
@@ -191,7 +202,7 @@ export function Plans() {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-center text-xs mt-8"
-          style={{ color: "rgba(215,203,181,0.25)" }}
+          style={{ color: "rgba(26,14,5,0.25)" }}
         >
           Os benefícios são válidos durante o período de vigência do plano contratado.
           Itens consumidos do frigobar serão cobrados à parte.

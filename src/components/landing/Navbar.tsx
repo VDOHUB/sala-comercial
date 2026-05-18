@@ -35,10 +35,10 @@ export function Navbar() {
         className="transition-all duration-500"
         style={{
           background: scrolled
-            ? "rgba(12, 7, 4, 0.85)"
+            ? "rgba(245,240,232,0.92)"
             : "transparent",
           backdropFilter: scrolled ? "blur(24px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(215,203,181,0.06)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(26,14,5,0.08)" : "none",
         }}
       >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -50,11 +50,11 @@ export function Navbar() {
           >
             <div
               className="relative w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden"
-              style={{ background: "rgba(215,203,181,0.1)", border: "1px solid rgba(215,203,181,0.15)" }}
+              style={{ background: "rgba(26,14,5,0.08)", border: "1px solid rgba(26,14,5,0.12)" }}
             >
-              <span className="text-[10px] font-bold tracking-wider" style={{ color: "#d7cbb5" }}>VDO</span>
+              <span className="text-[10px] font-bold tracking-wider" style={{ color: "#1a0e05" }}>VDO</span>
             </div>
-            <span className="font-semibold text-base tracking-tight" style={{ color: "#d7cbb5" }}>
+            <span className="font-semibold text-base tracking-tight" style={{ color: "#1a0e05" }}>
               VDO HUB
             </span>
           </motion.div>
@@ -66,13 +66,13 @@ export function Navbar() {
                 key={link.id}
                 onClick={() => scrollTo(link.id)}
                 className="text-sm font-medium transition-colors relative group"
-                style={{ color: "rgba(215,203,181,0.55)" }}
-                whileHover={{ color: "#d7cbb5" }}
+                style={{ color: "rgba(26,14,5,0.5)" }}
+                whileHover={{ color: "#1a0e05" }}
               >
                 {link.label}
                 <span
                   className="absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300"
-                  style={{ background: "rgba(215,203,181,0.3)" }}
+                  style={{ background: "rgba(26,14,5,0.25)" }}
                 />
               </motion.button>
             ))}
@@ -83,11 +83,10 @@ export function Navbar() {
             onClick={() => scrollTo("reservar")}
             className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold relative overflow-hidden"
             style={{
-              background: "rgba(215,203,181,0.1)",
-              border: "1px solid rgba(215,203,181,0.15)",
-              color: "#d7cbb5",
+              background: "#1a0e05",
+              color: "#f5f0e8",
             }}
-            whileHover={{ scale: 1.03, background: "rgba(215,203,181,0.15)" }}
+            whileHover={{ scale: 1.03, boxShadow: "0 4px 16px rgba(26,14,5,0.2)" }}
             whileTap={{ scale: 0.97 }}
           >
             Reservar agora
@@ -101,17 +100,17 @@ export function Navbar() {
             <motion.span
               animate={{ rotate: mobileOpen ? 45 : 0, y: mobileOpen ? 7 : 0 }}
               className="block w-5 h-px"
-              style={{ background: "#d7cbb5" }}
+              style={{ background: "#1a0e05" }}
             />
             <motion.span
               animate={{ opacity: mobileOpen ? 0 : 1 }}
               className="block w-5 h-px"
-              style={{ background: "#d7cbb5" }}
+              style={{ background: "#1a0e05" }}
             />
             <motion.span
               animate={{ rotate: mobileOpen ? -45 : 0, y: mobileOpen ? -7 : 0 }}
               className="block w-5 h-px"
-              style={{ background: "#d7cbb5" }}
+              style={{ background: "#1a0e05" }}
             />
           </button>
         </div>
@@ -126,9 +125,9 @@ export function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
             style={{
-              background: "rgba(12,7,4,0.95)",
+              background: "rgba(245,240,232,0.97)",
               backdropFilter: "blur(24px)",
-              borderBottom: "1px solid rgba(215,203,181,0.08)",
+              borderBottom: "1px solid rgba(26,14,5,0.08)",
             }}
           >
             <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col gap-4">
@@ -137,7 +136,7 @@ export function Navbar() {
                   key={link.id}
                   onClick={() => scrollTo(link.id)}
                   className="text-left text-sm font-medium py-2"
-                  style={{ color: "rgba(215,203,181,0.7)" }}
+                  style={{ color: "rgba(26,14,5,0.65)" }}
                 >
                   {link.label}
                 </button>
@@ -145,7 +144,7 @@ export function Navbar() {
               <button
                 onClick={() => scrollTo("reservar")}
                 className="mt-2 px-5 py-3 rounded-xl text-sm font-semibold"
-                style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5", border: "1px solid rgba(215,203,181,0.15)" }}
+                style={{ background: "#1a0e05", color: "#f5f0e8" }}
               >
                 Reservar agora
               </button>

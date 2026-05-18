@@ -49,32 +49,32 @@ function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
       <div
         className="rounded-2xl p-5 sm:p-6 h-full relative overflow-hidden"
         style={{
-          background: "rgba(255,255,255,0.025)",
-          border: "1px solid rgba(215,203,181,0.07)",
+          background: "rgba(26,14,5,0.04)",
+          border: "1px solid rgba(26,14,5,0.07)",
         }}
       >
         <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-          style={{ background: "radial-gradient(circle at 0% 0%, rgba(215,203,181,0.05) 0%, transparent 60%)" }}
+          style={{ background: "radial-gradient(circle at 0% 0%, rgba(26,14,5,0.04) 0%, transparent 60%)" }}
         />
 
         <div className="flex items-start gap-3 mb-4">
           <div
             className="flex-shrink-0 text-xs font-black tracking-widest tabular-nums"
-            style={{ color: "rgba(215,203,181,0.15)", fontSize: "11px" }}
+            style={{ color: "rgba(26,14,5,0.15)", fontSize: "11px" }}
           >
             {step.number}
           </div>
           <div
             className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs"
-            style={{ background: "rgba(215,203,181,0.06)", color: "rgba(215,203,181,0.35)", border: "1px solid rgba(215,203,181,0.08)" }}
+            style={{ background: "rgba(26,14,5,0.06)", color: "rgba(26,14,5,0.38)", border: "1px solid rgba(26,14,5,0.08)" }}
           >
             {step.detail}
           </div>
         </div>
 
-        <h3 className="text-base sm:text-lg font-bold mb-2 leading-snug" style={{ color: "#d7cbb5" }}>{step.title}</h3>
-        <p className="text-sm leading-relaxed" style={{ color: "rgba(215,203,181,0.45)" }}>{step.desc}</p>
+        <h3 className="text-base sm:text-lg font-bold mb-2 leading-snug" style={{ color: "#1a0e05" }}>{step.title}</h3>
+        <p className="text-sm leading-relaxed" style={{ color: "rgba(26,14,5,0.5)" }}>{step.desc}</p>
       </div>
     </motion.div>
   );
@@ -85,8 +85,8 @@ export function HowItWorks() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="como-funciona" className="py-24 sm:py-32 relative" style={{ background: "#0c0704" }}>
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+    <section id="como-funciona" className="py-24 sm:py-32 relative" style={{ background: "#f5f0e8" }}>
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(26,14,5,0.08), transparent)" }} />
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <div ref={ref} className="text-center mb-14 sm:mb-20">
@@ -95,7 +95,7 @@ export function HowItWorks() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
             className="text-xs font-semibold tracking-widest uppercase mb-4"
-            style={{ color: "rgba(215,203,181,0.3)" }}
+            style={{ color: "rgba(26,14,5,0.3)" }}
           >
             Processo
           </motion.p>
@@ -104,7 +104,7 @@ export function HowItWorks() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
             className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
-            style={{ color: "#d7cbb5" }}
+            style={{ color: "#1a0e05" }}
           >
             Como funciona.
           </motion.h2>
@@ -113,7 +113,7 @@ export function HowItWorks() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-sm sm:text-base max-w-md mx-auto"
-            style={{ color: "rgba(215,203,181,0.4)" }}
+            style={{ color: "rgba(26,14,5,0.45)" }}
           >
             Do agendamento ao acesso em 4 etapas. Tudo automatizado.
           </motion.p>
@@ -136,23 +136,23 @@ export function HowItWorks() {
               key={p.label}
               className="rounded-2xl p-5 sm:p-6 relative overflow-hidden group"
               style={{
-                background: "rgba(255,255,255,0.025)",
-                border: "1px solid rgba(215,203,181,0.07)",
+                background: "rgba(26,14,5,0.04)",
+                border: "1px solid rgba(26,14,5,0.07)",
               }}
             >
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.04) 0%, transparent 60%)" }}
+                style={{ background: "radial-gradient(circle at 50% 0%, rgba(26,14,5,0.04) 0%, transparent 60%)" }}
               />
               <div
                 className="absolute top-0 left-6 right-6 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.15), transparent)" }}
+                style={{ background: "linear-gradient(90deg, transparent, rgba(26,14,5,0.12), transparent)" }}
               />
-              <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: "rgba(215,203,181,0.3)" }}>
+              <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: "rgba(26,14,5,0.3)" }}>
                 {p.label}
               </p>
-              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2" style={{ color: "#d7cbb5" }}>{p.time}</p>
-              <p className="text-sm" style={{ color: "rgba(215,203,181,0.4)" }}>{p.note}</p>
+              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2" style={{ color: "#1a0e05" }}>{p.time}</p>
+              <p className="text-sm" style={{ color: "rgba(26,14,5,0.45)" }}>{p.note}</p>
             </div>
           ))}
         </motion.div>

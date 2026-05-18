@@ -48,27 +48,26 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       whileHover={{ y: -4, scale: 1.01 }}
       className="relative rounded-2xl p-5 sm:p-6 group cursor-default overflow-hidden"
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(215,203,181,0.07)",
-        backdropFilter: "blur(12px)",
+        background: "rgba(26,14,5,0.04)",
+        border: "1px solid rgba(26,14,5,0.07)",
       }}
     >
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"
-        style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.06) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(circle at 50% 0%, rgba(26,14,5,0.05) 0%, transparent 70%)" }}
       />
       <div
         className="absolute top-0 left-6 right-6 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.2), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(26,14,5,0.15), transparent)" }}
       />
 
-      <div className="text-xs font-bold tracking-widest mb-5 inline-flex" style={{ color: "rgba(215,203,181,0.2)" }}>
+      <div className="text-xs font-bold tracking-widest mb-5 inline-flex" style={{ color: "rgba(26,14,5,0.18)" }}>
         {feature.icon}
       </div>
-      <h3 className="text-base font-semibold mb-2 leading-snug" style={{ color: "#d7cbb5" }}>
+      <h3 className="text-base font-semibold mb-2 leading-snug" style={{ color: "#1a0e05" }}>
         {feature.title}
       </h3>
-      <p className="text-sm leading-relaxed" style={{ color: "rgba(215,203,181,0.45)" }}>
+      <p className="text-sm leading-relaxed" style={{ color: "rgba(26,14,5,0.5)" }}>
         {feature.desc}
       </p>
     </motion.div>
@@ -80,8 +79,8 @@ export function Features() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="sobre" className="py-24 sm:py-32 relative" style={{ background: "#0c0704" }}>
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.06), transparent)" }} />
+    <section id="sobre" className="py-24 sm:py-32 relative" style={{ background: "#f5f0e8" }}>
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(26,14,5,0.08), transparent)" }} />
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <div ref={ref} className="text-center mb-14 sm:mb-20">
@@ -90,7 +89,7 @@ export function Features() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
             className="text-xs font-semibold tracking-widest uppercase mb-4"
-            style={{ color: "rgba(215,203,181,0.3)" }}
+            style={{ color: "rgba(26,14,5,0.3)" }}
           >
             Por que escolher o VDO HUB
           </motion.p>
@@ -100,10 +99,10 @@ export function Features() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
             className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-5"
-            style={{ color: "#d7cbb5" }}
+            style={{ color: "#1a0e05" }}
           >
             Tecnologia que trabalha
-            <span className="block" style={{ color: "rgba(215,203,181,0.3)" }}>por você.</span>
+            <span className="block" style={{ color: "rgba(26,14,5,0.28)" }}>por você.</span>
           </motion.h2>
 
           <motion.p
@@ -111,7 +110,7 @@ export function Features() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-base sm:text-lg max-w-xl mx-auto"
-            style={{ color: "rgba(215,203,181,0.4)" }}
+            style={{ color: "rgba(26,14,5,0.45)" }}
           >
             Do agendamento ao acesso, tudo automatizado para você focar no que realmente importa.
           </motion.p>

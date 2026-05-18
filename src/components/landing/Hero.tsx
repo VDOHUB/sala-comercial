@@ -1,30 +1,38 @@
 "use client";
-import { useRef, useEffect } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
+import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
 
-function AnimatedOrb({ x, y, size, delay, opacity }: { x: string; y: string; size: number; delay: number; opacity: number }) {
-  return (
-    <motion.div
-      className="absolute rounded-full pointer-events-none"
-      style={{
-        left: x, top: y,
-        width: size, height: size,
-        background: `radial-gradient(circle, rgba(215,203,181,${opacity}) 0%, transparent 70%)`,
-        filter: "blur(60px)",
-      }}
-      animate={{ scale: [1, 1.15, 1], opacity: [opacity, opacity * 1.5, opacity] }}
-      transition={{ duration: 8 + delay, repeat: Infinity, ease: "easeInOut", delay }}
-    />
-  );
-}
+// Placeholders atmosféricos — substituir por <Image src="..." /> quando as fotos chegarem
+const roomScenes = [
+  {
+    bg: "linear-gradient(135deg, #3d2010 0%, #5a3822 40%, #2a1608 100%)",
+    overlay: "radial-gradient(ellipse at 30% 60%, rgba(139,106,62,0.35) 0%, transparent 60%)",
+    label: "Espaço de trabalho",
+  },
+  {
+    bg: "linear-gradient(160deg, #1e1108 0%, #3a2412 50%, #4d3218 100%)",
+    overlay: "radial-gradient(ellipse at 70% 40%, rgba(90,56,34,0.4) 0%, transparent 55%)",
+    label: "Mesa de reunião",
+  },
+  {
+    bg: "linear-gradient(135deg, #2a1a0a 0%, #4a2e14 45%, #3d2010 100%)",
+    overlay: "radial-gradient(ellipse at 50% 70%, rgba(100,70,30,0.3) 0%, transparent 60%)",
+    label: "Ambiente climatizado",
+  },
+  {
+    bg: "linear-gradient(150deg, #321e07 0%, #1a0e05 50%, #4d3015 100%)",
+    overlay: "radial-gradient(ellipse at 20% 30%, rgba(139,106,62,0.25) 0%, transparent 50%)",
+    label: "Detalhes da sala",
+  },
+];
 
 function GridLines() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <svg width="100%" height="100%" className="opacity-[0.03]">
+      <svg width="100%" height="100%" className="opacity-[0.04]">
         <defs>
           <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(215,203,181,1)" strokeWidth="0.5" />
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(26,14,5,1)" strokeWidth="0.5" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
@@ -41,103 +49,176 @@ function fadeUp(i: number) {
   };
 }
 
-function FloatingDashboard() {
+function DashboardCard() {
+  return (
+    <div
+      className="relative rounded-2xl overflow-hidden"
+      style={{
+        background: "rgba(12,7,4,0.75)",
+        border: "1px solid rgba(215,203,181,0.14)",
+        backdropFilter: "blur(24px)",
+        boxShadow: "0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(215,203,181,0.08)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "1px solid rgba(215,203,181,0.07)" }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.55)" }}>VDO HUB — Anápolis</span>
+        </div>
+        <span className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>ao vivo</span>
+      </div>
+
+      {/* Status cards */}
+      <div className="p-4 space-y-3">
+        {[
+          { label: "Período Matutino", status: "Disponível", dot: "#4ade80", bar: 0.3 },
+          { label: "Período Vespertino", status: "Reservado", dot: "#f59e0b", bar: 0.85 },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl p-3"
+            style={{ background: "rgba(215,203,181,0.05)", border: "1px solid rgba(215,203,181,0.07)" }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.7)" }}>{item.label}</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.dot }} />
+                <span className="text-xs" style={{ color: "rgba(215,203,181,0.45)" }}>{item.status}</span>
+              </div>
+            </div>
+            <div className="h-1 rounded-full" style={{ background: "rgba(215,203,181,0.08)" }}>
+              <motion.div
+                className="h-1 rounded-full"
+                style={{ background: `linear-gradient(90deg, ${item.dot}80, ${item.dot})` }}
+                initial={{ width: "0%" }}
+                animate={{ width: `${item.bar * 100}%` }}
+                transition={{ duration: 1.5, delay: 1.8, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+        ))}
+
+        {/* Último acesso */}
+        <div
+          className="rounded-xl p-3"
+          style={{ background: "rgba(215,203,181,0.05)", border: "1px solid rgba(215,203,181,0.07)" }}
+        >
+          <p className="text-xs mb-2 font-medium" style={{ color: "rgba(215,203,181,0.4)" }}>Último acesso</p>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+              style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5" }}
+            >
+              M
+            </div>
+            <div>
+              <p className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.8)" }}>Facial reconhecido</p>
+              <p className="text-xs" style={{ color: "rgba(215,203,181,0.35)" }}>08:02 — Acesso liberado</p>
+            </div>
+            <div className="ml-auto w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+          </div>
+        </div>
+
+        {/* Próxima reserva */}
+        <div
+          className="rounded-xl px-3 py-2.5 flex items-center justify-between"
+          style={{ background: "rgba(215,203,181,0.07)", border: "1px solid rgba(215,203,181,0.12)" }}
+        >
+          <div>
+            <p className="text-xs" style={{ color: "rgba(215,203,181,0.4)" }}>Próxima reserva</p>
+            <p className="text-sm font-semibold" style={{ color: "#d7cbb5" }}>14h00 hoje</p>
+          </div>
+          <div
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+            style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5" }}
+          >
+            Confirmado
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PhotoPanel() {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % roomScenes.length), 3500);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <motion.div
-      className="animate-float-slow"
+      className="animate-float-slow relative"
       initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 1.2, delay: 1.2, ease: "easeOut" }}
     >
-      <div
-        className="relative rounded-2xl overflow-hidden"
-        style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(215,203,181,0.12)",
-          backdropFilter: "blur(20px)",
-          width: 320,
-          boxShadow: "0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(215,203,181,0.06), inset 0 1px 0 rgba(215,203,181,0.06)",
-        }}
-      >
-        {/* Header */}
+      <div className="relative rounded-3xl overflow-hidden" style={{ width: 340, height: 500 }}>
+        {/* Cycling room photos */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={idx}
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          >
+            <div className="absolute inset-0" style={{ background: roomScenes[idx].bg }} />
+            <div className="absolute inset-0" style={{ background: roomScenes[idx].overlay }} />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Gradient overlay bottom — para legibilidade do card */}
         <div
-          className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: "1px solid rgba(215,203,181,0.06)" }}
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.5)" }}>VDO HUB — Anápolis</span>
-          </div>
-          <span className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>ao vivo</span>
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "linear-gradient(to top, rgba(8,4,2,0.85) 0%, rgba(8,4,2,0.3) 45%, transparent 75%)" }}
+        />
+
+        {/* Label da foto */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`label-${idx}`}
+            className="absolute top-4 left-4"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <span
+              className="text-xs font-medium px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(12,7,4,0.5)", color: "rgba(215,203,181,0.6)", border: "1px solid rgba(215,203,181,0.1)", backdropFilter: "blur(8px)" }}
+            >
+              {roomScenes[idx].label}
+            </span>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Dots indicator */}
+        <div className="absolute top-4 right-4 flex items-center gap-1.5">
+          {roomScenes.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === idx ? 16 : 5,
+                height: 5,
+                background: i === idx ? "rgba(215,203,181,0.8)" : "rgba(215,203,181,0.25)",
+              }}
+            />
+          ))}
         </div>
 
-        {/* Status cards */}
-        <div className="p-4 space-y-3">
-          {[
-            { label: "Período Matutino", status: "Disponível", dot: "#4ade80", bar: 0.3 },
-            { label: "Período Vespertino", status: "Reservado", dot: "#f59e0b", bar: 0.85 },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl p-3"
-              style={{ background: "rgba(215,203,181,0.04)", border: "1px solid rgba(215,203,181,0.06)" }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.7)" }}>{item.label}</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.dot }} />
-                  <span className="text-xs" style={{ color: "rgba(215,203,181,0.45)" }}>{item.status}</span>
-                </div>
-              </div>
-              <div className="h-1 rounded-full" style={{ background: "rgba(215,203,181,0.08)" }}>
-                <motion.div
-                  className="h-1 rounded-full"
-                  style={{ background: `linear-gradient(90deg, ${item.dot}80, ${item.dot})` }}
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${item.bar * 100}%` }}
-                  transition={{ duration: 1.5, delay: 1.8, ease: "easeOut" }}
-                />
-              </div>
-            </div>
-          ))}
-
-          {/* Último acesso */}
-          <div
-            className="rounded-xl p-3"
-            style={{ background: "rgba(215,203,181,0.04)", border: "1px solid rgba(215,203,181,0.06)" }}
-          >
-            <p className="text-xs mb-2 font-medium" style={{ color: "rgba(215,203,181,0.45)" }}>Último acesso</p>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5" }}
-              >
-                M
-              </div>
-              <div>
-                <p className="text-xs font-medium" style={{ color: "rgba(215,203,181,0.8)" }}>Facial reconhecido</p>
-                <p className="text-xs" style={{ color: "rgba(215,203,181,0.35)" }}>08:02 — Acesso liberado</p>
-              </div>
-              <div className="ml-auto w-2 h-2 rounded-full bg-green-400" />
-            </div>
-          </div>
-
-          {/* Próxima reserva */}
-          <div
-            className="rounded-xl px-3 py-2.5 flex items-center justify-between"
-            style={{ background: "rgba(215,203,181,0.06)", border: "1px solid rgba(215,203,181,0.1)" }}
-          >
-            <div>
-              <p className="text-xs" style={{ color: "rgba(215,203,181,0.45)" }}>Próxima reserva</p>
-              <p className="text-sm font-semibold" style={{ color: "#d7cbb5" }}>14h00 hoje</p>
-            </div>
-            <div
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-              style={{ background: "rgba(215,203,181,0.1)", color: "#d7cbb5" }}
-            >
-              Confirmado
-            </div>
-          </div>
+        {/* Dashboard card no bottom */}
+        <div className="absolute bottom-5 left-5 right-5">
+          <DashboardCard />
         </div>
       </div>
     </motion.div>
@@ -163,21 +244,34 @@ export function Hero() {
   }, [mouseX, mouseY]);
 
   return (
-    <section ref={containerRef} className="relative min-h-screen flex items-center overflow-hidden" style={{ background: "#0c0704" }}>
+    <section ref={containerRef} className="relative min-h-screen flex items-center overflow-hidden" style={{ background: "#f5f0e8" }}>
 
-      {/* Background orbs */}
-      <AnimatedOrb x="10%" y="20%" size={500} delay={0} opacity={0.06} />
-      <AnimatedOrb x="60%" y="60%" size={400} delay={2} opacity={0.04} />
-      <AnimatedOrb x="80%" y="10%" size={300} delay={4} opacity={0.05} />
+      {/* Subtle orb */}
+      <motion.div
+        className="absolute pointer-events-none"
+        style={{
+          left: "5%", top: "15%",
+          width: 600, height: 600,
+          background: "radial-gradient(circle, rgba(139,106,62,0.08) 0%, transparent 70%)",
+          filter: "blur(60px)",
+        }}
+        animate={{ scale: [1, 1.12, 1], opacity: [0.08, 0.14, 0.08] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute pointer-events-none"
+        style={{
+          right: "0%", bottom: "10%",
+          width: 400, height: 400,
+          background: "radial-gradient(circle, rgba(50,30,7,0.06) 0%, transparent 70%)",
+          filter: "blur(50px)",
+        }}
+        animate={{ scale: [1, 1.15, 1] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+      />
 
       {/* Grid */}
       <GridLines />
-
-      {/* Radial vignette */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 0%, #0c0704 100%)" }}
-      />
 
       <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 w-full pt-28 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -188,33 +282,33 @@ export function Hero() {
               {...fadeUp(0)}
               className="inline-flex items-center gap-2 mb-6 sm:mb-8 px-4 py-2 rounded-full"
               style={{
-                background: "rgba(215,203,181,0.06)",
-                border: "1px solid rgba(215,203,181,0.1)",
+                background: "rgba(26,14,5,0.06)",
+                border: "1px solid rgba(26,14,5,0.1)",
               }}
             >
               <motion.span
-                className="w-1.5 h-1.5 rounded-full bg-green-400"
+                className="w-1.5 h-1.5 rounded-full bg-green-500"
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              <span className="text-xs font-medium tracking-wide" style={{ color: "rgba(215,203,181,0.6)" }}>
+              <span className="text-xs font-medium tracking-wide" style={{ color: "rgba(26,14,5,0.55)" }}>
                 Anápolis, GO
               </span>
             </motion.div>
 
             <motion.h1
               {...fadeUp(1)}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-5 sm:mb-6 glow-text"
-              style={{ color: "#d7cbb5" }}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-5 sm:mb-6"
+              style={{ color: "#1a0e05" }}
             >
               Seu espaço.<br />
-              <span style={{ color: "rgba(215,203,181,0.35)" }}>Quando você precisar.</span>
+              <span style={{ color: "rgba(26,14,5,0.28)" }}>Quando você precisar.</span>
             </motion.h1>
 
             <motion.p
               {...fadeUp(2)}
               className="text-base sm:text-lg leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto lg:mx-0"
-              style={{ color: "rgba(215,203,181,0.5)" }}
+              style={{ color: "rgba(26,14,5,0.5)" }}
             >
               Aluguel por período com reconhecimento facial, pagamento online e
               automação completa. Do agendamento ao acesso — sem fricção.
@@ -228,8 +322,8 @@ export function Hero() {
               <motion.button
                 onClick={() => document.getElementById("reservar")?.scrollIntoView({ behavior: "smooth" })}
                 className="px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-sm font-bold"
-                style={{ background: "#d7cbb5", color: "#321e07" }}
-                whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(215,203,181,0.25)" }}
+                style={{ background: "#1a0e05", color: "#f5f0e8" }}
+                whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(26,14,5,0.25)" }}
                 whileTap={{ scale: 0.97 }}
               >
                 Reservar agora
@@ -238,11 +332,11 @@ export function Hero() {
                 onClick={() => document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" })}
                 className="px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-sm font-bold"
                 style={{
-                  background: "rgba(215,203,181,0.06)",
-                  border: "1px solid rgba(215,203,181,0.12)",
-                  color: "rgba(215,203,181,0.7)",
+                  background: "rgba(26,14,5,0.06)",
+                  border: "1px solid rgba(26,14,5,0.12)",
+                  color: "rgba(26,14,5,0.65)",
                 }}
-                whileHover={{ scale: 1.03, background: "rgba(215,203,181,0.1)" }}
+                whileHover={{ scale: 1.03, background: "rgba(26,14,5,0.09)" }}
                 whileTap={{ scale: 0.97 }}
               >
                 Ver planos
@@ -260,27 +354,27 @@ export function Hero() {
                 { value: "Seg–Sex", label: "disponível" },
               ].map((s) => (
                 <div key={s.label}>
-                  <p className="text-xl sm:text-2xl font-bold" style={{ color: "#d7cbb5" }}>{s.value}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "rgba(215,203,181,0.4)" }}>{s.label}</p>
+                  <p className="text-xl sm:text-2xl font-bold" style={{ color: "#1a0e05" }}>{s.value}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(26,14,5,0.38)" }}>{s.label}</p>
                 </div>
               ))}
             </motion.div>
           </div>
 
-          {/* Right — dashboard flutuante (só desktop) */}
+          {/* Right — painel de fotos com dashboard (só desktop) */}
           <motion.div
             className="hidden lg:flex justify-center"
             style={{ x: springX, y: springY }}
           >
-            <FloatingDashboard />
+            <PhotoPanel />
           </motion.div>
         </div>
       </div>
 
-      {/* Bottom fade */}
+      {/* Bottom fade para próxima seção */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, transparent, #0c0704)" }}
+        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, transparent, #f5f0e8)" }}
       />
     </section>
   );
