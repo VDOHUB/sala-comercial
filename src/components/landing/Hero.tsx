@@ -2,35 +2,7 @@
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
-
-// ─── FOTOS DA SALA ───────────────────────────────────────────────────────────
-// Coloque as imagens em: public/sala/
-// Nomes esperados: foto-01.jpg  foto-02.jpg  foto-03.jpg  foto-04.jpg
-// Qualquer formato funciona (jpg, jpeg, png, webp).
-// Enquanto a foto não existir, o gradiente de fundo aparece no lugar.
-// ─────────────────────────────────────────────────────────────────────────────
-const roomScenes = [
-  {
-    src: "/sala/foto-01.jpg",
-    label: "Espaço de trabalho",
-    bg: "linear-gradient(135deg, #3d2010 0%, #5a3822 40%, #2a1608 100%)",
-  },
-  {
-    src: "/sala/foto-02.jpg",
-    label: "Mesa de reunião",
-    bg: "linear-gradient(160deg, #1e1108 0%, #3a2412 50%, #4d3218 100%)",
-  },
-  {
-    src: "/sala/foto-03.jpg",
-    label: "Ambiente climatizado",
-    bg: "linear-gradient(135deg, #2a1a0a 0%, #4a2e14 45%, #3d2010 100%)",
-  },
-  {
-    src: "/sala/foto-04.jpg",
-    label: "Detalhes da sala",
-    bg: "linear-gradient(150deg, #321e07 0%, #1a0e05 50%, #4d3015 100%)",
-  },
-];
+import { heroPanelPhotos } from "@/config/gallery";
 
 function GridLines() {
   return (
@@ -150,11 +122,11 @@ function PhotoPanel() {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % roomScenes.length), 3500);
+    const t = setInterval(() => setIdx((i) => (i + 1) % heroPanelPhotos.length), 3500);
     return () => clearInterval(t);
   }, []);
 
-  const scene = roomScenes[idx];
+  const scene = heroPanelPhotos[idx];
 
   return (
     <motion.div
@@ -176,7 +148,7 @@ function PhotoPanel() {
             transition={{ duration: 1, ease: "easeOut" }}
           >
             {/* Gradiente fallback */}
-            <div className="absolute inset-0" style={{ background: scene.bg }} />
+            <div className="absolute inset-0" style={{ background: scene.fallback }} />
 
             {/* Foto real — sobrepõe o gradiente quando o arquivo existir */}
             <Image

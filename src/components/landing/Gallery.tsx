@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import { roomPhotos } from "@/config/gallery";
 
 const amenities = [
   "Ar-condicionado",
@@ -12,49 +13,7 @@ const amenities = [
   "Acesso facial",
 ];
 
-// ─── FOTOS DA SALA ───────────────────────────────────────────────────────────
-// Coloque as imagens em: public/sala/
-// Nomes esperados:
-//   foto-01.jpg  →  Vista geral da sala
-//   foto-02.jpg  →  Mesa de reunião
-//   foto-03.jpg  →  Ambiente climatizado
-//   foto-04.jpg  →  Detalhes da sala
-//   foto-05.jpg  →  Comodidades
-// Qualquer formato funciona (jpg, jpeg, png, webp).
-// Enquanto a foto não existir o gradiente aparece no lugar automaticamente.
-// ─────────────────────────────────────────────────────────────────────────────
-const photos = [
-  {
-    id: 1,
-    src: "/sala/foto-01.jpg",
-    label: "Vista geral da sala",
-    bg: "linear-gradient(135deg, #3d2010 0%, #5a3822 40%, #2a1608 100%)",
-  },
-  {
-    id: 2,
-    src: "/sala/foto-02.jpg",
-    label: "Mesa de reunião",
-    bg: "linear-gradient(160deg, #1e1108 0%, #3a2412 50%, #4d3218 100%)",
-  },
-  {
-    id: 3,
-    src: "/sala/foto-03.jpg",
-    label: "Ambiente climatizado",
-    bg: "linear-gradient(135deg, #2a1a0a 0%, #4a2e14 45%, #3d2010 100%)",
-  },
-  {
-    id: 4,
-    src: "/sala/foto-04.jpg",
-    label: "Detalhes da sala",
-    bg: "linear-gradient(150deg, #321e07 0%, #1a0e05 50%, #4d3015 100%)",
-  },
-  {
-    id: 5,
-    src: "/sala/foto-05.jpg",
-    label: "Comodidades",
-    bg: "linear-gradient(140deg, #1a0e05 0%, #3a2412 40%, #5a3822 100%)",
-  },
-];
+// As fotos vêm de src/config/gallery.ts — edite lá para adicionar mais
 
 export function Gallery() {
   const ref = useRef(null);
@@ -64,11 +23,11 @@ export function Gallery() {
 
   useEffect(() => {
     if (paused) return;
-    const t = setInterval(() => setActive((i) => (i + 1) % photos.length), 3800);
+    const t = setInterval(() => setActive((i) => (i + 1) % roomPhotos.length), 3800);
     return () => clearInterval(t);
   }, [paused]);
 
-  const current = photos[active];
+  const current = roomPhotos[active];
 
   return (
     <section id="espaco" className="py-24 sm:py-32 relative" style={{ background: "#f5f0e8" }}>
@@ -133,7 +92,7 @@ export function Gallery() {
                 transition={{ duration: 0.9, ease: "easeOut" }}
               >
                 {/* Gradiente fallback */}
-                <div className="absolute inset-0" style={{ background: current.bg }} />
+                <div className="absolute inset-0" style={{ background: current.fallback }} />
 
                 {/* Foto real — sobrepõe quando o arquivo existir */}
                 <Image
@@ -142,7 +101,7 @@ export function Gallery() {
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 1152px"
-                  priority={current.id === 1}
+                  priority={active === 0}
                   onError={() => {/* foto ausente: gradiente fica visível */}}
                 />
               </motion.div>
@@ -181,13 +140,13 @@ export function Gallery() {
             {/* Contador */}
             <div className="absolute bottom-5 right-6">
               <span className="text-xs" style={{ color: "rgba(215,203,181,0.4)" }}>
-                {active + 1} / {photos.length}
+                {active + 1} / {roomPhotos.length}
               </span>
             </div>
 
             {/* Dots */}
             <div className="absolute top-5 left-1/2 -translate-x-1/2 flex items-center gap-2">
-              {photos.map((_, i) => (
+              {roomPhotos.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => { setActive(i); setPaused(true); }}
