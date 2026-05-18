@@ -33,69 +33,73 @@ export default function ClientesPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Clientes</h1>
-          <p className="text-gray-400 text-sm mt-1">Todos os clientes cadastrados</p>
-        </div>
-        <div className="text-sm text-gray-500">
-          {clients.length} cliente{clients.length !== 1 ? "s" : ""}
+          <h1 className="text-2xl font-bold" style={{ color: "#1a0e05" }}>Clientes</h1>
+          <p className="text-sm mt-1" style={{ color: "rgba(26,14,5,0.4)" }}>
+            {clients.length} cliente{clients.length !== 1 ? "s" : ""}
+          </p>
         </div>
       </div>
 
-      {/* Busca */}
       <div className="mb-6">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nome ou e-mail..."
-          className="w-full max-w-sm bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-gray-500"
+          className="w-full max-w-sm rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+          style={{
+            background: "#f5f0e8",
+            border: "1px solid rgba(26,14,5,0.12)",
+            color: "#1a0e05",
+          }}
         />
       </div>
 
       {loading ? (
-        <div className="text-gray-400 animate-pulse text-center py-16">Carregando clientes...</div>
+        <div className="animate-pulse text-center py-16 text-sm" style={{ color: "rgba(26,14,5,0.38)" }}>Carregando clientes...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <div className="text-5xl mb-4">👥</div>
-          <p className="font-medium text-gray-300 mb-1">
+        <div className="text-center py-20" style={{ color: "rgba(26,14,5,0.38)" }}>
+          <p className="font-medium text-lg mb-1" style={{ color: "#1a0e05" }}>
             {search ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado ainda"}
           </p>
           <p className="text-sm">Os clientes aparecem automaticamente após a primeira reserva.</p>
         </div>
       ) : (
-        <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
+        <div className="rounded-2xl overflow-hidden" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cliente</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contato</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Reservas</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cadastro</th>
+              <tr style={{ borderBottom: "1px solid rgba(26,14,5,0.07)" }}>
+                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.35)" }}>Cliente</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.35)" }}>Contato</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.35)" }}>Reservas</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.35)" }}>Cadastro</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-700/30 transition-colors">
+                <tr key={c.id} className="transition-colors" style={{ borderTop: "1px solid rgba(26,14,5,0.05)" }}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center text-sm font-bold text-emerald-400">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{ background: "rgba(26,14,5,0.08)", color: "#1a0e05" }}>
                         {c.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-white font-medium text-sm">{c.name}</p>
-                        {c.cpf && <p className="text-gray-500 text-xs">CPF: {c.cpf}</p>}
+                        <p className="font-medium text-sm" style={{ color: "#1a0e05" }}>{c.name}</p>
+                        {c.cpf && <p className="text-xs" style={{ color: "rgba(26,14,5,0.38)" }}>CPF: {c.cpf}</p>}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-gray-300 text-sm">{c.email}</p>
-                    {c.phone && <p className="text-gray-500 text-xs mt-0.5">{c.phone}</p>}
+                    <p className="text-sm" style={{ color: "rgba(26,14,5,0.65)" }}>{c.email}</p>
+                    {c.phone && <p className="text-xs mt-0.5" style={{ color: "rgba(26,14,5,0.38)" }}>{c.phone}</p>}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05" }}>
                       {c._count.bookings} reserva{c._count.bookings !== 1 ? "s" : ""}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">
+                  <td className="px-6 py-4 text-sm" style={{ color: "rgba(26,14,5,0.45)" }}>
                     {format(new Date(c.createdAt), "dd/MM/yyyy", { locale: ptBR })}
                   </td>
                 </tr>
