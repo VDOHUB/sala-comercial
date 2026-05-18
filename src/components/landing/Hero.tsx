@@ -195,7 +195,7 @@ function PhotoPanel() {
 
         {/* Dots */}
         <div className="absolute top-4 right-4 flex items-center gap-1.5">
-          {roomScenes.map((_, i) => (
+          {heroPanelPhotos.map((_, i) => (
             <button
               key={i}
               onClick={() => setIdx(i)}
