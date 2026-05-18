@@ -168,7 +168,7 @@ export function Gallery() {
                 border: "1px solid rgba(215,203,181,0.1)",
                 backdropFilter: "blur(8px)",
               }}
-              onClick={() => { setActive((i) => (i - 1 + photos.length) % photos.length); setPaused(true); }}
+              onClick={() => { setActive((i) => (i - 1 + roomPhotos.length) % roomPhotos.length); setPaused(true); }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M8.5 2.5L4.5 7l4 4.5" stroke="rgba(215,203,181,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -183,7 +183,7 @@ export function Gallery() {
                 border: "1px solid rgba(215,203,181,0.1)",
                 backdropFilter: "blur(8px)",
               }}
-              onClick={() => { setActive((i) => (i + 1) % photos.length); setPaused(true); }}
+              onClick={() => { setActive((i) => (i + 1) % roomPhotos.length); setPaused(true); }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M5.5 2.5L9.5 7l-4 4.5" stroke="rgba(215,203,181,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
