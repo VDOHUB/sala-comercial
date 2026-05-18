@@ -9,9 +9,36 @@ const links = [
 ];
 
 const contact = [
-  "viverdeobrahub@gmail.com",
-  "(62) 99633-2257",
-  "@vdohub_",
+  {
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2"/>
+        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+      </svg>
+    ),
+    label: "viverdeobrahub@gmail.com",
+    href: "mailto:viverdeobrahub@gmail.com",
+  },
+  {
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.69h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+      </svg>
+    ),
+    label: "(62) 99633-2257",
+    href: "https://wa.me/5562996332257",
+  },
+  {
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+      </svg>
+    ),
+    label: "@vdohub_",
+    href: "https://instagram.com/vdohub_",
+  },
 ];
 
 export function Footer() {
@@ -70,16 +97,42 @@ export function Footer() {
             </p>
             <ul className="space-y-3 mb-5">
               {contact.map((c) => (
-                <li key={c} className="text-sm" style={{ color: "rgba(215,203,181,0.38)" }}>
-                  {c}
+                <li key={c.label}>
+                  <motion.a
+                    href={c.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 text-sm transition-colors group"
+                    style={{ color: "rgba(215,203,181,0.38)" }}
+                    whileHover={{ color: "#d7cbb5", x: 2 }}
+                  >
+                    <span style={{ color: "rgba(215,203,181,0.3)" }} className="group-hover:text-[#d7cbb5] transition-colors flex-shrink-0">
+                      {c.icon}
+                    </span>
+                    {c.label}
+                  </motion.a>
                 </li>
               ))}
             </ul>
-            <p className="text-xs leading-relaxed" style={{ color: "rgba(215,203,181,0.22)" }}>
-              Galeria Nazir — Av. São Francisco de Assis, 181<br />
-              2º piso, sala 03 · Jundiaí, Anápolis - GO<br />
-              CEP 75110-810
-            </p>
+            <motion.a
+              href="https://maps.google.com/?q=Galeria+Nazir+Av+São+Francisco+de+Assis+181+Anápolis+GO"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-2.5 group"
+              whileHover={{ x: 2 }}
+            >
+              <span className="flex-shrink-0 mt-0.5 transition-colors" style={{ color: "rgba(215,203,181,0.3)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              <p className="text-xs leading-relaxed transition-colors" style={{ color: "rgba(215,203,181,0.22)" }}>
+                Galeria Nazir — Av. São Francisco de Assis, 181<br />
+                2º piso, sala 03 · Jundiaí, Anápolis - GO<br />
+                CEP 75110-810
+              </p>
+            </motion.a>
           </div>
         </div>
 
@@ -89,7 +142,6 @@ export function Footer() {
           style={{ borderTop: "1px solid rgba(215,203,181,0.05)", color: "rgba(215,203,181,0.18)" }}
         >
           <p>© {new Date().getFullYear()} VDO HUB. Todos os direitos reservados.</p>
-          <p>Desenvolvido por Johni Michael · CNPJ 65.002.492/0001-08</p>
         </div>
       </div>
     </footer>
