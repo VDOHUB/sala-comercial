@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "VDO HUB — Aluguel de Sala por Assinatura",
     description: "Reserve sua sala. Acesso facial, pagamento online, confirmação imediata.",
-    url: "https://viverdeobra.com",
+    url: "https://vdohub.viverdeobra.com",
     siteName: "VDO HUB",
     locale: "pt_BR",
     type: "website",

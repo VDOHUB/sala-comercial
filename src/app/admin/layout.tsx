@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/admin/Sidebar";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export const metadata = { title: "Admin — Viver de Obra" };
+export const metadata = { title: "Admin — VDO HUB" };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
