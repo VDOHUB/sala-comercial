@@ -26,7 +26,22 @@ export async function createAsaasCharge(data: {
   value: number;
   dueDate: string;          // YYYY-MM-DD
   description: string;
-  externalReference?: string; // bookingId
+  externalReference?: string;
+  creditCard?: {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+  };
+  creditCardHolderInfo?: {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    phone?: string;
+    postalCode?: string;
+    addressNumber?: string;
+  };
 }) {
   const res = await asaas.post("/payments", data);
   return res.data as {

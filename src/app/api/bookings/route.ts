@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createAsaasCustomer, createAsaasCharge } from "@/lib/asaas/client";
-import { sendBookingConfirmation } from "@/lib/resend/emails";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
 
+const cardSchema = z.object({
+  holderName:  z.string().min(2),
+  number:      z.string().min(13),
+  expiryMonth: z.string().length(2),
+  expiryYear:  z.string().min(4),
+  ccv:         z.string().min(3),
+});
+
 const schema = z.object({
-  name:         z.string().min(2),
-  email:        z.string().email(),
-  phone:        z.string().optional(),
-  cpf:          z.string().optional(),
-  startAt:      z.string().datetime(),
-  endAt:        z.string().datetime(),
-  billingType:  z.enum(["PIX", "BOLETO", "CREDIT_CARD", "UNDEFINED"]),
-  voucherCode:  z.string().optional(),
-  photoBase64:  z.string().optional(), // foto para facial
+  name:        z.string().min(2),
+  email:       z.string().email(),
+  phone:       z.string().optional(),
+  cpf:         z.string().optional(),
+  startAt:     z.string().datetime(),
+  endAt:       z.string().datetime(),
+  voucherCode: z.string().optional(),
+  card:        cardSchema.optional(), // presente se totalAmount > 0
 });
 
 // ── POST /api/bookings — criar reserva ────────────────────────────
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const body   = await req.json();
   const parsed = schema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = parsed.data;
+  const data    = parsed.data;
   const startAt = new Date(data.startAt);
   const endAt   = new Date(data.endAt);
 
@@ -34,9 +40,7 @@ export async function POST(req: NextRequest) {
   const conflict = await prisma.booking.findFirst({
     where: {
       status: { in: ["PENDING", "PAID", "ACTIVE"] },
-      OR: [
-        { startAt: { lt: endAt }, endAt: { gt: startAt } },
-      ],
+      OR: [{ startAt: { lt: endAt }, endAt: { gt: startAt } }],
     },
   });
 
@@ -51,14 +55,25 @@ export async function POST(req: NextRequest) {
   let client = await prisma.client.findUnique({ where: { email: data.email } });
   if (!client) {
     client = await prisma.client.create({
-      data: { name: data.name, email: data.email, phone: data.phone, cpf: data.cpf },
+      data: {
+        name:  data.name,
+        email: data.email,
+        phone: data.phone,
+        cpf:   data.cpf || null,
+      },
+    });
+  } else if (data.cpf && !client.cpf) {
+    // Atualiza CPF se ainda não tinha
+    client = await prisma.client.update({
+      where: { id: client.id },
+      data:  { cpf: data.cpf },
     });
   }
 
-  // Calcular valor (regra: R$/hora — ajustar conforme cliente)
-  const PRICE_PER_HOUR = 50; // R$ por hora
-  const hours = (endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60);
-  let totalAmount = hours * PRICE_PER_HOUR;
+  // Calcular valor base (plano)
+  const hours        = (endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60);
+  const PRICE_PER_HOUR = 60; // R$/hora — ajuste conforme plano
+  let totalAmount    = hours * PRICE_PER_HOUR;
   let discountAmount = 0;
   let voucherId: string | undefined;
 
@@ -72,7 +87,7 @@ export async function POST(req: NextRequest) {
       voucher &&
       voucher.active &&
       (!voucher.expiresAt || voucher.expiresAt > new Date()) &&
-      (!voucher.maxUses || voucher.usedCount < voucher.maxUses);
+      (!voucher.maxUses   || voucher.usedCount < voucher.maxUses);
 
     if (valid && voucher) {
       discountAmount =
@@ -81,44 +96,63 @@ export async function POST(req: NextRequest) {
           : Math.min(voucher.discountValue, totalAmount);
 
       totalAmount = Math.max(0, totalAmount - discountAmount);
-      voucherId = voucher.id;
+      voucherId   = voucher.id;
     }
   }
 
-  // ── Cobrança ASAAS (apenas se valor > 0) ──────────────────────────
+  // ── Cobrança ASAAS ────────────────────────────────────────────────
   let chargeId: string | null = null;
   let paymentUrl: string | null = null;
-  let bookingStatus: "PENDING" | "PAID" = "PENDING";
+  let bookingStatus: "PENDING" | "PAID" = totalAmount === 0 ? "PAID" : "PENDING";
 
   if (totalAmount > 0) {
+    if (!data.card) {
+      return NextResponse.json(
+        { error: "Dados do cartão obrigatórios para reservas pagas." },
+        { status: 400 }
+      );
+    }
+
     try {
       const asaasCustomer = await createAsaasCustomer({
-        name: client.name,
-        email: client.email,
+        name:     client.name,
+        email:    client.email,
         cpfCnpj: client.cpf ?? undefined,
-        phone: client.phone ?? undefined,
+        phone:    client.phone ?? undefined,
       });
 
       const charge = await createAsaasCharge({
-        customer: asaasCustomer.id,
-        billingType: data.billingType,
-        value: totalAmount,
-        dueDate: format(addDays(new Date(), 1), "yyyy-MM-dd"),
+        customer:    asaasCustomer.id,
+        billingType: "CREDIT_CARD",
+        value:       totalAmount,
+        dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
         description: `Reserva sala comercial — ${format(startAt, "dd/MM/yyyy HH:mm")} a ${format(endAt, "HH:mm")}`,
+        creditCard: {
+          holderName:  data.card.holderName,
+          number:      data.card.number.replace(/\s/g, ""),
+          expiryMonth: data.card.expiryMonth,
+          expiryYear:  data.card.expiryYear,
+          ccv:         data.card.ccv,
+        },
+        creditCardHolderInfo: {
+          name:     client.name,
+          email:    client.email,
+          cpfCnpj: client.cpf ?? "00000000000",
+          phone:    client.phone ?? undefined,
+        },
       });
 
-      chargeId   = charge.id;
-      paymentUrl = charge.invoiceUrl;
-    } catch (err) {
+      chargeId      = charge.id;
+      paymentUrl    = charge.invoiceUrl;
+      bookingStatus = "PAID";
+    } catch (err: unknown) {
       console.error("[bookings] ASAAS error:", err);
-      return NextResponse.json(
-        { error: "Erro ao processar pagamento. Tente novamente." },
-        { status: 502 }
-      );
+      const msg =
+        (err as { response?: { data?: { errors?: { description: string }[] } } })
+          ?.response?.data?.errors?.[0]?.description ??
+        "Pagamento recusado. Verifique os dados do cartão.";
+      return NextResponse.json({ error: msg }, { status: 402 });
     }
-  } else {
-    // Desconto cobre valor total — confirma automaticamente sem cobrar
-    bookingStatus = "PAID";
   }
 
   // Criar booking
@@ -140,34 +174,23 @@ export async function POST(req: NextRequest) {
   if (voucherId) {
     await prisma.voucher.update({
       where: { id: voucherId },
-      data: { usedCount: { increment: 1 } },
+      data:  { usedCount: { increment: 1 } },
     });
   }
 
-  // Enviar email de confirmação
-  const emailResult = await sendBookingConfirmation({
-    to: client.email,
-    clientName: client.name,
-    startAt,
-    endAt,
-    totalAmount,
-    paymentUrl: paymentUrl ?? undefined,
-  });
-  console.log("[bookings] email result:", JSON.stringify(emailResult));
-
+  // E-mail é enviado APÓS o cadastro facial (PATCH /api/bookings/[id]/facial)
   return NextResponse.json({
-    bookingId:  booking.id,
-    paymentUrl,
+    bookingId:     booking.id,
     totalAmount,
     discountAmount,
-    free: totalAmount === 0,
+    free:          totalAmount === 0,
   });
 }
 
 // ── GET /api/bookings?month=YYYY-MM — slots ocupados ─────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const month = searchParams.get("month"); // ex: "2026-05"
+  const month = searchParams.get("month");
 
   const activeStatuses = ["PENDING", "PAID", "ACTIVE"] as ("PENDING" | "PAID" | "ACTIVE")[];
 

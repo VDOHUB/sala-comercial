@@ -26,7 +26,12 @@
       "Bash(git push *)",
       "Bash(node -e \"const p = require\\('@prisma/client'\\); console.log\\(Object.keys\\(p\\).slice\\(0,20\\)\\)\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\({...p.dependencies,...p.devDependencies}\\).filter\\(k=>['framer-motion','gsap','lenis','@studio-freight/lenis'].includes\\(k\\)\\)\\)\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "WebSearch",
+      "WebFetch(domain:www.controlid.com.br)",
+      "WebFetch(domain:www.youtube.com)",
+      "Bash(npx vercel *)",
+      "Bash(mkdir -p \"D:\\\\1 - Projetos\\\\Carlos\\\\automacao_sala_comercial\\\\src\\\\app\\\\api\\\\bookings\\\\[id]\\\\facial\")"
     ]
   }
 }
