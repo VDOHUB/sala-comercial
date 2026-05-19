@@ -13,12 +13,15 @@ const DAYS = Array.from({ length: 60 }, (_, i) => addDays(new Date(), i + 1))
   .filter((d) => !isWeekend(d))
   .slice(0, 30);
 
-const PLANS: Record<string, { label: string; price: number; installments: string; credits: number; validityMonths: number | null }> = {
-  HUB_ONE:     { label: "HUB ONE — 1 período",       price: 300,  installments: "ou 3x R$100",  credits: 1,  validityMonths: null },
-  HUB_FIVE:    { label: "HUB FIVE — 5 períodos",     price: 1200, installments: "ou 10x R$120", credits: 5,  validityMonths: 6   },
-  HUB_TEN:     { label: "HUB TEN — 10 períodos",     price: 2200, installments: "ou 10x R$220", credits: 10, validityMonths: 8   },
-  HUB_PARTNER: { label: "HUB PARTNER — 15 períodos", price: 3000, installments: "ou 10x R$300", credits: 15, validityMonths: 12  },
-};
+import type { Plan } from "@/lib/plans";
+import { DEFAULT_PLANS } from "@/lib/plans";
+
+// Convertido de array para Record no runtime
+function plansToRecord(arr: Plan[]) {
+  const rec: Record<string, Plan> = {};
+  for (const p of arr) rec[p.key] = p;
+  return rec;
+}
 
 const stepVariants: Variants = {
   enter:  { opacity: 0, x: 24, filter: "blur(6px)" },
@@ -84,6 +87,7 @@ function isPeriodOccupied(date: Date, period: typeof PERIODS[0], slots: Occupied
 }
 
 export function BookingSection() {
+  const [plansArr, setPlansArr] = useState<Plan[]>(DEFAULT_PLANS);
   const [step, setStep]               = useState<1 | 2 | 3 | 4>(1);
   const [selectedDate, setSelectedDate]     = useState<Date | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -126,11 +130,16 @@ export function BookingSection() {
   const [error, setError]     = useState("");
   const [done, setDone]       = useState(false);
 
-  const plan   = PLANS[selectedPlan];
+  const PLANS  = plansToRecord(plansArr);
+  const plan   = PLANS[selectedPlan] ?? DEFAULT_PLANS[0];
   const period = PERIODS.find((p) => p.id === selectedPeriod);
 
-  // Carrega slots ocupados ao montar
+  // Carrega planos e slots ocupados ao montar
   useEffect(() => {
+    fetch("/api/plans")
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setPlansArr(data); })
+      .catch(() => {});
     fetch("/api/bookings")
       .then((r) => r.json())
       .then((slots) => { if (Array.isArray(slots)) setOccupiedSlots(slots); })

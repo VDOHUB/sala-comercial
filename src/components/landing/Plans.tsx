@@ -1,53 +1,26 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, useInView } from "framer-motion";
+import { DEFAULT_PLANS, type Plan } from "@/lib/plans";
 
-const plans = [
-  {
-    name: "HUB ONE",
-    tag: null,
-    periods: 1,
-    validity: "1 mês",
-    price: 300,
-    installments: "3x de R$ 100,00",
-    economy: null,
-    highlight: false,
-  },
-  {
-    name: "HUB FIVE",
-    tag: null,
-    periods: 5,
-    validity: "6 meses",
-    price: 1200,
-    installments: "10x de R$ 120,00",
-    economy: "Economia de R$ 300",
-    highlight: false,
-  },
-  {
-    name: "HUB TEN",
-    tag: "Mais popular",
-    periods: 10,
-    validity: "8 meses",
-    price: 2200,
-    installments: "10x de R$ 220,00",
-    economy: "Economia de R$ 400",
-    highlight: true,
-  },
-  {
-    name: "HUB PARTNER",
-    tag: null,
-    periods: 15,
-    validity: "12 meses",
-    price: 3000,
-    installments: "10x de R$ 300,00",
-    economy: "Economia de R$ 500",
-    highlight: false,
-  },
-];
+// Visual metadata per plan key (stays static)
+const PLAN_META: Record<string, { tag: string | null; economy: string | null; highlight: boolean }> = {
+  HUB_ONE:     { tag: null,           economy: null,                highlight: false },
+  HUB_FIVE:    { tag: null,           economy: "Economia de R$ 300", highlight: false },
+  HUB_TEN:     { tag: "Mais popular", economy: "Economia de R$ 400", highlight: true  },
+  HUB_PARTNER: { tag: null,           economy: "Economia de R$ 500", highlight: false },
+};
 
 export function Plans() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+  const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
+
+  useEffect(() => {
+    fetch("/api/plans").then((r) => r.json()).then((data) => {
+      if (Array.isArray(data)) setPlans(data);
+    }).catch(() => {});
+  }, []);
 
   return (
     <section id="planos" className="py-24 sm:py-32 relative" style={{ background: "#f5f0e8" }}>
@@ -93,15 +66,17 @@ export function Plans() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {plans.map((plan, i) => (
+          {plans.map((plan, i) => {
+            const meta = PLAN_META[plan.key] ?? { tag: null, economy: null, highlight: false };
+            return (
             <motion.div
-              key={plan.name}
+              key={plan.key}
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
               whileHover={{ y: -6, scale: 1.02 }}
               className="relative rounded-2xl p-5 sm:p-6 flex flex-col overflow-hidden group"
-              style={plan.highlight ? {
+              style={meta.highlight ? {
                 background: "#1a0e05",
                 border: "1px solid rgba(26,14,5,0.8)",
                 boxShadow: "0 20px 60px rgba(26,14,5,0.18), inset 0 1px 0 rgba(215,203,181,0.08)",
@@ -110,7 +85,7 @@ export function Plans() {
                 border: "1px solid rgba(26,14,5,0.07)",
               }}
             >
-              {plan.highlight && (
+              {meta.highlight && (
                 <div
                   className="absolute top-0 left-0 right-0 h-px"
                   style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.35), transparent)" }}
@@ -119,57 +94,59 @@ export function Plans() {
 
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
-                style={{ background: plan.highlight
+                style={{ background: meta.highlight
                   ? "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.05) 0%, transparent 60%)"
                   : "radial-gradient(circle at 50% 0%, rgba(26,14,5,0.04) 0%, transparent 60%)"
                 }}
               />
 
-              {plan.tag ? (
+              {meta.tag ? (
                 <div
                   className="inline-flex self-start mb-5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide"
-                  style={plan.highlight
+                  style={meta.highlight
                     ? { background: "rgba(215,203,181,0.12)", color: "#d7cbb5", border: "1px solid rgba(215,203,181,0.18)" }
                     : { background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }
                   }
                 >
-                  {plan.tag}
+                  {meta.tag}
                 </div>
               ) : (
                 <div className="mb-10" />
               )}
 
               <p className="text-xs font-semibold tracking-widest uppercase mb-4"
-                style={{ color: plan.highlight ? "rgba(215,203,181,0.35)" : "rgba(26,14,5,0.28)" }}>
-                {plan.name}
+                style={{ color: meta.highlight ? "rgba(215,203,181,0.35)" : "rgba(26,14,5,0.28)" }}>
+                {plan.key.replace("_", " ")}
               </p>
 
               <p className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-1"
-                style={{ color: plan.highlight ? "#d7cbb5" : "#1a0e05" }}>
+                style={{ color: meta.highlight ? "#d7cbb5" : "#1a0e05" }}>
                 R${plan.price.toLocaleString("pt-BR")}
               </p>
               <p className="text-xs mb-6"
-                style={{ color: plan.highlight ? "rgba(215,203,181,0.35)" : "rgba(26,14,5,0.38)" }}>
-                ou {plan.installments} sem juros
+                style={{ color: meta.highlight ? "rgba(215,203,181,0.35)" : "rgba(26,14,5,0.38)" }}>
+                {plan.installments} sem juros
               </p>
 
               <div className="space-y-2 mb-8">
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full" style={{ background: plan.highlight ? "rgba(215,203,181,0.3)" : "rgba(26,14,5,0.25)" }} />
-                  <span className="text-sm" style={{ color: plan.highlight ? "rgba(215,203,181,0.6)" : "rgba(26,14,5,0.55)" }}>
-                    {plan.periods} período{plan.periods > 1 ? "s" : ""}
+                  <div className="w-1 h-1 rounded-full" style={{ background: meta.highlight ? "rgba(215,203,181,0.3)" : "rgba(26,14,5,0.25)" }} />
+                  <span className="text-sm" style={{ color: meta.highlight ? "rgba(215,203,181,0.6)" : "rgba(26,14,5,0.55)" }}>
+                    {plan.credits} período{plan.credits > 1 ? "s" : ""}
                   </span>
                 </div>
+                {plan.validityMonths && (
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full" style={{ background: plan.highlight ? "rgba(215,203,181,0.3)" : "rgba(26,14,5,0.25)" }} />
-                  <span className="text-sm" style={{ color: plan.highlight ? "rgba(215,203,181,0.6)" : "rgba(26,14,5,0.55)" }}>
-                    Validade: {plan.validity}
+                  <div className="w-1 h-1 rounded-full" style={{ background: meta.highlight ? "rgba(215,203,181,0.3)" : "rgba(26,14,5,0.25)" }} />
+                  <span className="text-sm" style={{ color: meta.highlight ? "rgba(215,203,181,0.6)" : "rgba(26,14,5,0.55)" }}>
+                    Validade: {plan.validityMonths} meses
                   </span>
                 </div>
-                {plan.economy && (
+                )}
+                {meta.economy && (
                   <div className="flex items-center gap-2">
                     <div className="w-1 h-1 rounded-full" style={{ background: "#4ade80" }} />
-                    <span className="text-sm" style={{ color: "rgba(74,222,128,0.8)" }}>{plan.economy}</span>
+                    <span className="text-sm" style={{ color: "rgba(74,222,128,0.8)" }}>{meta.economy}</span>
                   </div>
                 )}
               </div>
@@ -177,7 +154,7 @@ export function Plans() {
               <motion.button
                 onClick={() => document.getElementById("reservar")?.scrollIntoView({ behavior: "smooth" })}
                 className="mt-auto w-full py-3 rounded-xl text-sm font-semibold"
-                style={plan.highlight ? {
+                style={meta.highlight ? {
                   background: "#d7cbb5",
                   color: "#1a0e05",
                 } : {
@@ -185,7 +162,7 @@ export function Plans() {
                   color: "rgba(26,14,5,0.65)",
                   border: "1px solid rgba(26,14,5,0.1)",
                 }}
-                whileHover={plan.highlight
+                whileHover={meta.highlight
                   ? { boxShadow: "0 0 24px rgba(215,203,181,0.3)" }
                   : { background: "rgba(26,14,5,0.11)" }
                 }
@@ -194,7 +171,8 @@ export function Plans() {
                 Escolher plano
               </motion.button>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         <motion.p
