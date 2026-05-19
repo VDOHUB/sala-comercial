@@ -1,11 +1,15 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "fs/promises";
+import path from "path";
 
-export const runtime = "edge";
-export const alt     = "VDO HUB — Aluguel de Sala por Assinatura";
-export const size    = { width: 1200, height: 630 };
+export const alt         = "VDO HUB — Aluguel de Sala por Assinatura";
+export const size        = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OGImage() {
+export default async function OGImage() {
+  const logoData = await readFile(path.join(process.cwd(), "public/logo.png"));
+  const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -13,41 +17,18 @@ export default function OGImage() {
           width: "100%", height: "100%",
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          background: "#1a0e05",
+          background: "#f5f0e8",
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        {/* Glow de fundo */}
-        <div style={{
-          position: "absolute",
-          width: 700, height: 500,
-          background: "radial-gradient(ellipse, rgba(139,106,62,0.35) 0%, transparent 70%)",
-          borderRadius: "50%",
-          display: "flex",
-        }} />
-
-        {/* Logo badge */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          width: 88, height: 88, borderRadius: 22,
-          background: "#f5f0e8", marginBottom: 32,
-        }}>
-          <span style={{ fontSize: 28, fontWeight: 900, color: "#1a0e05", letterSpacing: 2 }}>
-            VDO
-          </span>
-        </div>
-
-        {/* Título */}
-        <div style={{
-          fontSize: 64, fontWeight: 900, color: "#f5f0e8",
-          letterSpacing: -1, marginBottom: 16, display: "flex",
-        }}>
-          VDO HUB
-        </div>
+        {/* Logo centralizada */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoBase64} width={320} height={320}
+          style={{ objectFit: "contain", marginBottom: 16 }} alt="VDO HUB" />
 
         {/* Subtítulo */}
         <div style={{
-          fontSize: 26, color: "rgba(245,240,232,0.5)",
+          fontSize: 24, color: "rgba(26,14,5,0.4)",
           fontWeight: 400, display: "flex",
         }}>
           Aluguel de Sala por Assinatura · Anápolis, GO
@@ -55,9 +36,8 @@ export default function OGImage() {
 
         {/* Linha decorativa inferior */}
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          height: 4,
-          background: "linear-gradient(90deg, transparent, rgba(245,240,232,0.3), transparent)",
+          position: "absolute", bottom: 0, left: 0, right: 0, height: 4,
+          background: "linear-gradient(90deg, transparent, rgba(26,14,5,0.15), transparent)",
           display: "flex",
         }} />
       </div>

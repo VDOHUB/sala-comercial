@@ -17,11 +17,9 @@ function emailWrapper(content: string) {
 
         <!-- Logo / Header -->
         <tr><td align="center" style="padding-bottom:24px;">
-          <div style="display:inline-flex;align-items:center;justify-content:center;
-            width:52px;height:52px;border-radius:14px;background:#1a0e05;margin-bottom:12px;">
-            <span style="font-size:14px;font-weight:800;color:#f5f0e8;letter-spacing:1px;">VDO</span>
-          </div>
-          <div style="font-size:22px;font-weight:800;color:#1a0e05;letter-spacing:-0.5px;">VDO HUB</div>
+          <img src="https://vdohub.viverdeobra.com/logo.png"
+            alt="VDO HUB" width="100" height="100"
+            style="display:block;margin:0 auto 8px;border-radius:12px;" />
           <div style="font-size:12px;color:rgba(26,14,5,0.4);margin-top:4px;">Sala Comercial · Anápolis, GO</div>
         </td></tr>
 

@@ -12,6 +12,10 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "VDO HUB — Aluguel de Sala por Assinatura",
   description: "Espaço premium com acesso por reconhecimento facial, reserva online e automação completa. Anápolis, GO.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "VDO HUB — Aluguel de Sala por Assinatura",
     description: "Reserve sua sala. Acesso facial, pagamento online, confirmação imediata.",
@@ -19,6 +23,7 @@ export const metadata: Metadata = {
     siteName: "VDO HUB",
     locale: "pt_BR",
     type: "website",
+    images: [{ url: "https://vdohub.viverdeobra.com/logo.png", width: 500, height: 500, alt: "VDO HUB" }],
   },
 };
 
