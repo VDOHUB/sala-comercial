@@ -22,7 +22,7 @@ export async function createAsaasCustomer(data: {
 // ── Criar cobrança ────────────────────────────────────────────────
 export async function createAsaasCharge(data: {
   customer: string;
-  billingType: "PIX" | "BOLETO" | "CREDIT_CARD";
+  billingType: "PIX" | "BOLETO" | "CREDIT_CARD" | "UNDEFINED";
   value: number;
   dueDate: string;          // YYYY-MM-DD
   description: string;
