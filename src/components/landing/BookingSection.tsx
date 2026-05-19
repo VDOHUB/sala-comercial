@@ -358,7 +358,7 @@ export function BookingSection() {
                         <span className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>
                           {format(day,"MMM",{locale:ptBR})}
                         </span>
-                        {fullDay && <span className="text-xs mt-0.5" style={{ color: "rgba(215,203,181,0.25)", fontSize: 9 }}>lotado</span>}
+                        {fullDay && <span className="text-xs mt-0.5" style={{ color: "rgba(215,203,181,0.25)", fontSize: 9 }}>Reservado</span>}
                       </motion.button>
                     );
                   })}
