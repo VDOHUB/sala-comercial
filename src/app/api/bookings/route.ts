@@ -12,7 +12,7 @@ const schema = z.object({
   cpf:          z.string().optional(),
   startAt:      z.string().datetime(),
   endAt:        z.string().datetime(),
-  billingType:  z.enum(["PIX", "BOLETO", "CREDIT_CARD"]),
+  billingType:  z.enum(["PIX", "BOLETO", "CREDIT_CARD", "UNDEFINED"]),
   voucherCode:  z.string().optional(),
   photoBase64:  z.string().optional(), // foto para facial
 });

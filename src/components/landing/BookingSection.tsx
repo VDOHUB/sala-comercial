@@ -26,6 +26,57 @@ const stepVariants: Variants = {
   exit: { opacity: 0, x: -24, filter: "blur(6px)", transition: { duration: 0.3, ease: "easeIn" } },
 };
 
+// ── Sub-componentes fora do BookingSection para evitar remount a cada render ──
+
+function SelectionCard({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      className="relative rounded-xl p-4 text-left w-full overflow-hidden group"
+      style={{
+        background: selected ? "rgba(215,203,181,0.08)" : "rgba(255,255,255,0.02)",
+        border: `1px solid ${selected ? "rgba(215,203,181,0.2)" : "rgba(215,203,181,0.06)"}`,
+      }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+    >
+      {selected && (
+        <div
+          className="absolute top-0 left-4 right-4 h-px"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.3), transparent)" }}
+        />
+      )}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.04) 0%, transparent 60%)" }}
+      />
+      {children}
+    </motion.button>
+  );
+}
+
+function InputField({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold tracking-wider uppercase mb-2" style={{ color: "rgba(215,203,181,0.3)" }}>
+        {label}
+      </label>
+      <input
+        {...props}
+        className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(215,203,181,0.08)",
+          color: "#d7cbb5",
+        }}
+        onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(215,203,181,0.2)"; props.onFocus?.(e); }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(215,203,181,0.08)"; props.onBlur?.(e); }}
+      />
+    </div>
+  );
+}
+
 export function BookingSection() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -57,7 +108,7 @@ export function BookingSection() {
           ...form,
           startAt: startAt.toISOString(),
           endAt: endAt.toISOString(),
-          billingType: "CREDIT_CARD",
+          billingType: "UNDEFINED",
           voucherCode: form.voucherCode || undefined,
           planKey: selectedPlan,
           totalAmount: plan.price,
@@ -72,55 +123,6 @@ export function BookingSection() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function SelectionCard({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
-    return (
-      <motion.button
-        type="button"
-        onClick={onClick}
-        className="relative rounded-xl p-4 text-left w-full overflow-hidden group"
-        style={{
-          background: selected ? "rgba(215,203,181,0.08)" : "rgba(255,255,255,0.02)",
-          border: `1px solid ${selected ? "rgba(215,203,181,0.2)" : "rgba(215,203,181,0.06)"}`,
-        }}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-      >
-        {selected && (
-          <div
-            className="absolute top-0 left-4 right-4 h-px"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(215,203,181,0.3), transparent)" }}
-          />
-        )}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-          style={{ background: "radial-gradient(circle at 50% 0%, rgba(215,203,181,0.04) 0%, transparent 60%)" }}
-        />
-        {children}
-      </motion.button>
-    );
-  }
-
-  function InputField({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-    return (
-      <div>
-        <label className="block text-xs font-semibold tracking-wider uppercase mb-2" style={{ color: "rgba(215,203,181,0.3)" }}>
-          {label}
-        </label>
-        <input
-          {...props}
-          className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(215,203,181,0.08)",
-            color: "#d7cbb5",
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(215,203,181,0.2)"; props.onFocus?.(e); }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(215,203,181,0.08)"; props.onBlur?.(e); }}
-        />
-      </div>
-    );
   }
 
   return (
