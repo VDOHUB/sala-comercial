@@ -33,7 +33,7 @@ export function BookingSection() {
   const [selectedPlan, setSelectedPlan] = useState<string>("HUB_ONE");
   const [form, setForm] = useState({ name: "", email: "", phone: "", voucherCode: "" });
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ paymentUrl: string; total: number } | null>(null);
+  const [result, setResult] = useState<{ paymentUrl: string | null; total: number; free?: boolean } | null>(null);
 
   const ref = useRef(null);
   const plan = PLANS[selectedPlan];
@@ -65,7 +65,7 @@ export function BookingSection() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao criar reserva");
-      setResult({ paymentUrl: data.paymentUrl, total: data.totalAmount });
+      setResult({ paymentUrl: data.paymentUrl ?? null, total: data.totalAmount, free: data.free });
       setStep(3);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Erro ao processar reserva. Tente novamente.");
@@ -472,28 +472,41 @@ export function BookingSection() {
                   Email de confirmação enviado em instantes.
                 </p>
                 <p className="text-sm mb-10" style={{ color: "rgba(215,203,181,0.45)" }}>
-                  Após o pagamento, seu acesso facial e configurado automaticamente.
+                  {result?.free
+                    ? "Seu acesso facial está configurado e pronto para uso."
+                    : "Após o pagamento, seu acesso facial é configurado automaticamente."}
                 </p>
 
                 <div
                   className="rounded-2xl p-5 mb-8"
                   style={{ background: "rgba(215,203,181,0.04)", border: "1px solid rgba(215,203,181,0.08)" }}
                 >
-                  <p className="text-xs mb-2" style={{ color: "rgba(215,203,181,0.35)" }}>Total a pagar</p>
-                  <p className="text-4xl font-extrabold" style={{ color: "#d7cbb5" }}>
-                    R${result.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    <p className="text-xs mb-2" style={{ color: "rgba(215,203,181,0.35)" }}>
+                    {result.free ? "Valor cobrado" : "Total a pagar"}
+                  </p>
+                  <p className="text-4xl font-extrabold" style={{ color: result.free ? "rgba(74,222,128,0.8)" : "#d7cbb5" }}>
+                    {result.free ? "Gratuito" : `R$${result.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
                   </p>
                 </div>
 
-                <motion.button
-                  className="w-full py-4 rounded-2xl text-sm font-bold"
-                  style={{ background: "#d7cbb5", color: "#321e07" }}
-                  whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(215,203,181,0.2)" }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => window.open(result.paymentUrl, "_blank")}
-                >
-                  Ir para o pagamento
-                </motion.button>
+                {result.free ? (
+                  <div
+                    className="w-full py-4 rounded-2xl text-sm font-bold text-center"
+                    style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.9)" }}
+                  >
+                    ✓ Acesso confirmado — verifique seu e-mail
+                  </div>
+                ) : (
+                  <motion.button
+                    className="w-full py-4 rounded-2xl text-sm font-bold"
+                    style={{ background: "#d7cbb5", color: "#321e07" }}
+                    whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(215,203,181,0.2)" }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => result.paymentUrl && window.open(result.paymentUrl, "_blank")}
+                  >
+                    Ir para o pagamento
+                  </motion.button>
+                )}
               </motion.div>
             )}
 

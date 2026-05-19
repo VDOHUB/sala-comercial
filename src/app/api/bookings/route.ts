@@ -85,34 +85,54 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Criar cobrança no ASAAS
-  const asaasCustomer = await createAsaasCustomer({
-    name: client.name,
-    email: client.email,
-    cpfCnpj: client.cpf ?? undefined,
-    phone: client.phone ?? undefined,
-  });
+  // ── Cobrança ASAAS (apenas se valor > 0) ──────────────────────────
+  let chargeId: string | null = null;
+  let paymentUrl: string | null = null;
+  let bookingStatus: "PENDING" | "PAID" = "PENDING";
 
-  const charge = await createAsaasCharge({
-    customer: asaasCustomer.id,
-    billingType: data.billingType,
-    value: totalAmount,
-    dueDate: format(addDays(new Date(), 1), "yyyy-MM-dd"),
-    description: `Reserva sala comercial — ${format(startAt, "dd/MM/yyyy HH:mm")} a ${format(endAt, "HH:mm")}`,
-  });
+  if (totalAmount > 0) {
+    try {
+      const asaasCustomer = await createAsaasCustomer({
+        name: client.name,
+        email: client.email,
+        cpfCnpj: client.cpf ?? undefined,
+        phone: client.phone ?? undefined,
+      });
+
+      const charge = await createAsaasCharge({
+        customer: asaasCustomer.id,
+        billingType: data.billingType,
+        value: totalAmount,
+        dueDate: format(addDays(new Date(), 1), "yyyy-MM-dd"),
+        description: `Reserva sala comercial — ${format(startAt, "dd/MM/yyyy HH:mm")} a ${format(endAt, "HH:mm")}`,
+      });
+
+      chargeId   = charge.id;
+      paymentUrl = charge.invoiceUrl;
+    } catch (err) {
+      console.error("[bookings] ASAAS error:", err);
+      return NextResponse.json(
+        { error: "Erro ao processar pagamento. Tente novamente." },
+        { status: 502 }
+      );
+    }
+  } else {
+    // Desconto cobre valor total — confirma automaticamente sem cobrar
+    bookingStatus = "PAID";
+  }
 
   // Criar booking
   const booking = await prisma.booking.create({
     data: {
-      clientId:      client.id,
+      clientId:        client.id,
       startAt,
       endAt,
       totalAmount,
       discountAmount,
       voucherId,
-      asaasChargeId: charge.id,
-      asaasPaymentUrl: charge.invoiceUrl,
-      status: "PENDING",
+      asaasChargeId:   chargeId,
+      asaasPaymentUrl: paymentUrl,
+      status:          bookingStatus,
     },
   });
 
@@ -131,14 +151,15 @@ export async function POST(req: NextRequest) {
     startAt,
     endAt,
     totalAmount,
-    paymentUrl: charge.invoiceUrl,
+    paymentUrl: paymentUrl ?? undefined,
   });
 
   return NextResponse.json({
-    bookingId: booking.id,
-    paymentUrl: charge.invoiceUrl,
+    bookingId:  booking.id,
+    paymentUrl,
     totalAmount,
     discountAmount,
+    free: totalAmount === 0,
   });
 }
 
