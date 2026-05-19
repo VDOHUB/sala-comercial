@@ -67,7 +67,7 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       <h3 className="text-base font-semibold mb-2 leading-snug" style={{ color: "#1a0e05" }}>
         {feature.title}
       </h3>
-      <p className="text-sm leading-relaxed" style={{ color: "rgba(26,14,5,0.5)" }}>
+      <p className="text-sm leading-relaxed" style={{ color: "rgba(26,14,5,0.65)" }}>
         {feature.desc}
       </p>
     </motion.div>
@@ -110,7 +110,7 @@ export function Features() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-base sm:text-lg max-w-xl mx-auto"
-            style={{ color: "rgba(26,14,5,0.45)" }}
+            style={{ color: "rgba(26,14,5,0.6)" }}
           >
             Do agendamento ao acesso, tudo automatizado para você focar no que realmente importa.
           </motion.p>

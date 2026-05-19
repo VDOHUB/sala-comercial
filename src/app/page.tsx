@@ -6,6 +6,7 @@ import { Gallery }        from "@/components/landing/Gallery";
 import { HowItWorks }     from "@/components/landing/HowItWorks";
 import { BookingSection } from "@/components/landing/BookingSection";
 import { Footer }         from "@/components/landing/Footer";
+import { WhatsAppButton } from "@/components/landing/WhatsAppButton";
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
         <BookingSection />
       </main>
       <Footer />
+      <WhatsAppButton />
     </>
   );
 }

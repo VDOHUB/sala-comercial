@@ -256,7 +256,7 @@ export function Hero() {
             <motion.p
               {...fadeUp(2)}
               className="text-base sm:text-lg leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto lg:mx-0"
-              style={{ color: "rgba(26,14,5,0.5)" }}
+              style={{ color: "rgba(26,14,5,0.65)" }}
             >
               Aluguel por período com reconhecimento facial, pagamento online e
               automação completa. Do agendamento ao acesso — sem fricção.

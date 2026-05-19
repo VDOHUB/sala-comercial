@@ -85,7 +85,7 @@ export function Plans() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-sm sm:text-base max-w-md mx-auto"
-            style={{ color: "rgba(26,14,5,0.45)" }}
+            style={{ color: "rgba(26,14,5,0.6)" }}
           >
             Cada período equivale a <strong style={{ color: "rgba(26,14,5,0.7)" }}>5 horas</strong> de uso.
             Matutino (08h–13h) ou vespertino (14h–19h). Pagamento via cartão.
@@ -202,10 +202,10 @@ export function Plans() {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-center text-xs mt-8"
-          style={{ color: "rgba(26,14,5,0.25)" }}
+          style={{ color: "rgba(26,14,5,0.45)" }}
         >
           Os benefícios são válidos durante o período de vigência do plano contratado.
-          Itens consumidos do frigobar serão cobrados à parte.
+          Itens consumidos do frigobar (café incluso) serão cobrados à parte conforme consumo.
         </motion.p>
       </div>
     </section>

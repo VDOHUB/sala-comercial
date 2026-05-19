@@ -82,7 +82,7 @@ export default function DashboardPage() {
         <StatCard
           label="Taxa de ocupação"
           value={`${data.taxaOcupacao}%`}
-          sub="Horas reservadas este mês"
+          sub="Períodos reservados este mês"
         />
         <StatCard
           label="Ticket médio"

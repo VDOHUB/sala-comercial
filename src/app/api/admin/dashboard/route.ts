@@ -73,16 +73,13 @@ export async function GET() {
     ? ((receitaAtual - receitaAnterior) / receitaAnterior) * 100
     : 0;
 
-  // Taxa de ocupação (horas reservadas / horas disponíveis no mês)
-  const horasDisponiveisMes = 12 * 22; // 12h/dia × ~22 dias úteis
-  const reservasCompletasMes = await prisma.booking.findMany({
+  // Taxa de ocupação (períodos reservados / períodos disponíveis no mês)
+  // 2 períodos/dia × ~22 dias úteis = 44 períodos/mês
+  const periodosDisponiveis = 2 * 22;
+  const periodosReservadosMes = await prisma.booking.count({
     where: { status: { in: ["PAID","ACTIVE","COMPLETED"] }, startAt: mesAtual },
-    select: { startAt: true, endAt: true },
   });
-  const horasReservadas = reservasCompletasMes.reduce((acc: number, r: { startAt: Date; endAt: Date }) => {
-    return acc + (r.endAt.getTime() - r.startAt.getTime()) / 3600000;
-  }, 0);
-  const taxaOcupacao = Math.min(100, (horasReservadas / horasDisponiveisMes) * 100);
+  const taxaOcupacao = Math.min(100, (periodosReservadosMes / periodosDisponiveis) * 100);
 
   // Ticket médio
   const ticketMedio = reservasMes > 0 ? receitaAtual / reservasMes : 0;

@@ -8,7 +8,7 @@ const amenities = [
   "Ar-condicionado",
   "Wi-Fi de alta velocidade",
   "Frigobar",
-  "Tomadas e USB",
+  "Tomadas e HDMI",
   "Iluminação profissional",
   "Acesso facial",
 ];

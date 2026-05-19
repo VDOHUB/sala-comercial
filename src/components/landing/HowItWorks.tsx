@@ -74,7 +74,7 @@ function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
         </div>
 
         <h3 className="text-base sm:text-lg font-bold mb-2 leading-snug" style={{ color: "#1a0e05" }}>{step.title}</h3>
-        <p className="text-sm leading-relaxed" style={{ color: "rgba(26,14,5,0.5)" }}>{step.desc}</p>
+        <p className="text-sm leading-relaxed" style={{ color: "rgba(26,14,5,0.65)" }}>{step.desc}</p>
       </div>
     </motion.div>
   );
