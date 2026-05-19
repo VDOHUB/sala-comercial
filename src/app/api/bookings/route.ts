@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Enviar email de confirmação
-  await sendBookingConfirmation({
+  const emailResult = await sendBookingConfirmation({
     to: client.email,
     clientName: client.name,
     startAt,
@@ -153,6 +153,7 @@ export async function POST(req: NextRequest) {
     totalAmount,
     paymentUrl: paymentUrl ?? undefined,
   });
+  console.log("[bookings] email result:", JSON.stringify(emailResult));
 
   return NextResponse.json({
     bookingId:  booking.id,
