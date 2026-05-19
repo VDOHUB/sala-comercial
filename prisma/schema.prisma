@@ -133,6 +133,28 @@ model AccessLog {
   @@map("access_logs")
 }
 
+// ── Leads (dados de step 2 não convertidos) ───────────────────────
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  cpf       String?
+  planKey   String
+  createdAt DateTime @default(now())
+
+  @@map("leads")
+}
+
+// ── Configurações do sistema ──────────────────────────────────────
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
 // ── Admin ─────────────────────────────────────────────────────────
 model Admin {
   id        String   @id @default(cuid())

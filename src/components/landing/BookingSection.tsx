@@ -118,6 +118,9 @@ export function BookingSection() {
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [cameraError, setCameraError]   = useState("");
 
+  // Termos de uso
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
   // Loading / error geral
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
@@ -198,6 +201,13 @@ export function BookingSection() {
   }
 
   async function handleStep2Continue() {
+    // Salvar lead (não bloqueia mesmo que falhe)
+    fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: form.name, email: form.email, phone: form.phone, cpf: form.cpf, planKey: selectedPlan }),
+    }).catch(() => {});
+
     await checkVoucher();
     setStep(3);
   }
@@ -641,6 +651,34 @@ export function BookingSection() {
                   </div>
                 )}
 
+                {/* Termos de uso */}
+                <div className="flex items-start gap-3 mb-5 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTermsAccepted((v) => !v)}
+                    className="mt-0.5 flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-all"
+                    style={{
+                      background: termsAccepted ? "rgba(215,203,181,0.2)" : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${termsAccepted ? "rgba(215,203,181,0.4)" : "rgba(215,203,181,0.12)"}`,
+                    }}
+                  >
+                    {termsAccepted && (
+                      <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
+                        <path d="M1 4L4 7L10 1" stroke="#d7cbb5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
+                  <p className="text-xs leading-relaxed" style={{ color: "rgba(215,203,181,0.45)" }}>
+                    Li e aceito os{" "}
+                    <a href="/termos" target="_blank" rel="noopener noreferrer"
+                      className="font-semibold hover:underline"
+                      style={{ color: "rgba(215,203,181,0.7)" }}>
+                      Termos de Uso
+                    </a>{" "}
+                    do VDO HUB.
+                  </p>
+                </div>
+
                 {error && (
                   <div className="text-sm px-4 py-3 rounded-xl mb-4"
                     style={{ background:"rgba(220,38,38,0.08)", color:"#f87171", border:"1px solid rgba(220,38,38,0.2)" }}>
@@ -655,10 +693,14 @@ export function BookingSection() {
                     whileTap={{ scale:0.98 }}>
                     Voltar
                   </motion.button>
-                  <motion.button type="submit" disabled={loading}
+                  <motion.button type="submit" disabled={loading || !termsAccepted}
                     className="flex-1 py-3.5 rounded-xl text-sm font-bold"
-                    style={{ background:"#d7cbb5", color:"#321e07", opacity: loading ? 0.7 : 1 }}
-                    whileHover={{ scale:1.02, boxShadow:"0 0 30px rgba(215,203,181,0.2)" }}
+                    style={{
+                      background: termsAccepted ? "#d7cbb5" : "rgba(215,203,181,0.08)",
+                      color: termsAccepted ? "#321e07" : "rgba(215,203,181,0.25)",
+                      opacity: loading ? 0.7 : 1,
+                    }}
+                    whileHover={termsAccepted ? { scale:1.02, boxShadow:"0 0 30px rgba(215,203,181,0.2)" } : {}}
                     whileTap={{ scale:0.98 }}>
                     {loading ? "Processando..." : isFree ? "Confirmar reserva" : "Pagar e continuar"}
                   </motion.button>

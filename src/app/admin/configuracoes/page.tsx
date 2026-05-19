@@ -1,4 +1,31 @@
+"use client";
+import { useEffect, useState } from "react";
+
 export default function ConfiguracoesPage() {
+  const [terms, setTerms] = useState("");
+  const [termsSaved, setTermsSaved] = useState(false);
+  const [termsSaving, setTermsSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.terms) setTerms(data.terms);
+      });
+  }, []);
+
+  async function saveTerms() {
+    setTermsSaving(true);
+    await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ terms }),
+    });
+    setTermsSaving(false);
+    setTermsSaved(true);
+    setTimeout(() => setTermsSaved(false), 3000);
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -44,6 +71,50 @@ export default function ConfiguracoesPage() {
                 <span className="text-sm font-medium" style={{ color: "#1a0e05" }}>{item.value}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Termos de uso */}
+        <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+          <div className="flex items-start justify-between mb-1">
+            <h2 className="font-semibold" style={{ color: "#1a0e05" }}>Termos de uso</h2>
+            <a
+              href="/termos"
+              target="_blank"
+              className="text-xs font-medium hover:underline"
+              style={{ color: "rgba(26,14,5,0.45)" }}
+            >
+              Ver página pública →
+            </a>
+          </div>
+          <p className="text-sm mb-4" style={{ color: "rgba(26,14,5,0.4)" }}>
+            Texto exibido na página /termos e exigido na finalização do pedido.
+            Use **texto** para negrito e linhas em branco para separar parágrafos.
+          </p>
+          <textarea
+            value={terms}
+            onChange={(e) => setTerms(e.target.value)}
+            rows={14}
+            placeholder="**TERMOS DE USO — VDO HUB**&#10;&#10;1. Objeto&#10;..."
+            className="w-full rounded-xl px-4 py-3 text-sm font-mono resize-y focus:outline-none"
+            style={{
+              background: "rgba(26,14,5,0.04)",
+              border: "1px solid rgba(26,14,5,0.12)",
+              color: "#1a0e05",
+            }}
+          />
+          <div className="flex items-center justify-between mt-3">
+            {termsSaved ? (
+              <span className="text-xs font-medium" style={{ color: "#166534" }}>✓ Termos salvos</span>
+            ) : <span />}
+            <button
+              onClick={saveTerms}
+              disabled={termsSaving}
+              className="px-5 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "#1a0e05", color: "#f5f0e8" }}
+            >
+              {termsSaving ? "Salvando..." : "Salvar termos"}
+            </button>
           </div>
         </div>
 
