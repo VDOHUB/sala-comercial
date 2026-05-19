@@ -13,11 +13,11 @@ const DAYS = Array.from({ length: 60 }, (_, i) => addDays(new Date(), i + 1))
   .filter((d) => !isWeekend(d))
   .slice(0, 30);
 
-const PLANS: Record<string, { label: string; price: number; installments: string }> = {
-  HUB_ONE:     { label: "HUB ONE — 1 período",       price: 300,  installments: "ou 3x R$100" },
-  HUB_FIVE:    { label: "HUB FIVE — 5 períodos",     price: 1200, installments: "ou 10x R$120" },
-  HUB_TEN:     { label: "HUB TEN — 10 períodos",     price: 2200, installments: "ou 10x R$220" },
-  HUB_PARTNER: { label: "HUB PARTNER — 15 períodos", price: 3000, installments: "ou 10x R$300" },
+const PLANS: Record<string, { label: string; price: number; installments: string; credits: number; validityMonths: number | null }> = {
+  HUB_ONE:     { label: "HUB ONE — 1 período",       price: 300,  installments: "ou 3x R$100",  credits: 1,  validityMonths: null },
+  HUB_FIVE:    { label: "HUB FIVE — 5 períodos",     price: 1200, installments: "ou 10x R$120", credits: 5,  validityMonths: 6   },
+  HUB_TEN:     { label: "HUB TEN — 10 períodos",     price: 2200, installments: "ou 10x R$220", credits: 10, validityMonths: 8   },
+  HUB_PARTNER: { label: "HUB PARTNER — 15 períodos", price: 3000, installments: "ou 10x R$300", credits: 15, validityMonths: 12  },
 };
 
 const stepVariants: Variants = {
@@ -104,8 +104,12 @@ export function BookingSection() {
   // Cartão
   const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
 
-  // Booking criado
-  const [bookingId, setBookingId] = useState<string | null>(null);
+  // Resultado da criação
+  const [bookingId, setBookingId]           = useState<string | null>(null);
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+  const [subscriptionMeta, setSubscriptionMeta] = useState<{
+    token: string; planLabel: string; credits: number; expiresAt: string; portalUrl: string;
+  } | null>(null);
 
   // Facial
   const videoRef  = useRef<HTMLVideoElement>(null);
@@ -201,28 +205,46 @@ export function BookingSection() {
   // ── Criar reserva (step 3) ────────────────────────────────────────
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDate || !period) return;
+    const isMultiPeriod = plan.credits > 1;
+    if (!isMultiPeriod && (!selectedDate || !period)) return;
     setLoading(true); setError("");
 
-    const startAt = new Date(selectedDate); startAt.setHours(period.startHour, 0, 0, 0);
-    const endAt   = new Date(selectedDate); endAt.setHours(period.endHour, 0, 0, 0);
-    const isFree  = (finalAmount ?? plan.price) === 0;
+    const isFree = (finalAmount ?? plan.price) === 0;
+    const body: Record<string, unknown> = {
+      ...form,
+      planKey:     selectedPlan,
+      voucherCode: form.voucherCode || undefined,
+      card:        isFree ? undefined : card,
+    };
+
+    if (!isMultiPeriod && selectedDate && period) {
+      const startAt = new Date(selectedDate); startAt.setHours(period.startHour, 0, 0, 0);
+      const endAt   = new Date(selectedDate); endAt.setHours(period.endHour,   0, 0, 0);
+      body.startAt = startAt.toISOString();
+      body.endAt   = endAt.toISOString();
+    }
 
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          startAt:     startAt.toISOString(),
-          endAt:       endAt.toISOString(),
-          voucherCode: form.voucherCode || undefined,
-          card:        isFree ? undefined : card,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Erro ao processar."); return; }
-      setBookingId(data.bookingId);
+
+      if (data.isMultiPeriod) {
+        setSubscriptionId(data.subscriptionId);
+        setSubscriptionMeta({
+          token:     data.subscriptionToken,
+          planLabel: data.planLabel,
+          credits:   data.credits,
+          expiresAt: data.expiresAt,
+          portalUrl: data.portalUrl,
+        });
+      } else {
+        setBookingId(data.bookingId);
+      }
       setStep(4);
     } catch {
       setError("Erro de conexão. Tente novamente.");
@@ -233,13 +255,20 @@ export function BookingSection() {
 
   // ── Salvar foto e finalizar (step 4) ─────────────────────────────
   async function handleFacialSubmit() {
-    if (!photoDataUrl || !bookingId) return;
+    if (!photoDataUrl) return;
+    const targetId = subscriptionId ?? bookingId;
+    if (!targetId) return;
     setLoading(true); setError("");
     try {
-      const res = await fetch(`/api/bookings/${bookingId}/facial`, {
+      const targetId = subscriptionId ?? bookingId;
+      const res = await fetch(`/api/bookings/${targetId}/facial`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoBase64: photoDataUrl }),
+        body: JSON.stringify({
+          photoBase64:    photoDataUrl,
+          isSubscription: !!subscriptionId,
+          ...(subscriptionMeta ?? {}),
+        }),
       });
       if (!res.ok) { setError("Erro ao salvar foto. Tente novamente."); return; }
       setDone(true);
@@ -325,13 +354,39 @@ export function BookingSection() {
 
           <AnimatePresence mode="wait">
 
-            {/* ── STEP 1: Data / Período / Plano ── */}
+            {/* ── STEP 1: Plano / Data / Período ── */}
             {step === 1 && (
               <motion.div key="s1" variants={stepVariants} initial="enter" animate="center" exit="exit">
-                <p className="text-xs font-semibold tracking-widest uppercase mb-5"
-                  style={{ color: "rgba(215,203,181,0.3)" }}>01 / Selecione o dia</p>
 
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-8 -mx-1 px-1">
+                {/* Seleção de plano PRIMEIRO */}
+                <p className="text-xs font-semibold tracking-widest uppercase mb-4"
+                  style={{ color: "rgba(215,203,181,0.3)" }}>01 / Plano</p>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {Object.entries(PLANS).map(([key,p]) => (
+                    <SelectionCard key={key} selected={selectedPlan===key} onClick={()=>{ setSelectedPlan(key); setSelectedDate(null); setSelectedPeriod(null); }}>
+                      <p className="text-xs font-semibold mb-1"
+                        style={{ color: selectedPlan===key ? "#d7cbb5" : "rgba(215,203,181,0.5)" }}>{p.label}</p>
+                      <p className="text-xl font-extrabold"
+                        style={{ color: selectedPlan===key ? "#d7cbb5" : "rgba(215,203,181,0.4)" }}>
+                        R${p.price.toLocaleString("pt-BR")}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color:"rgba(215,203,181,0.3)" }}>{p.installments}</p>
+                      {p.validityMonths && (
+                        <p className="text-xs mt-1" style={{ color:"rgba(215,203,181,0.35)" }}>
+                          {p.credits} períodos · {p.validityMonths} meses
+                        </p>
+                      )}
+                    </SelectionCard>
+                  ))}
+                </div>
+
+                {/* Data/período SOMENTE para HUB ONE */}
+                <AnimatePresence>
+                  {plan.credits === 1 && (
+                    <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}>
+                      <p className="text-xs font-semibold tracking-widest uppercase mb-4"
+                        style={{ color: "rgba(215,203,181,0.3)" }}>02 / Data</p>
+                      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
                   {DAYS.map((day) => {
                     const sel      = selectedDate && format(day,"yyyy-MM-dd") === format(selectedDate,"yyyy-MM-dd");
                     const fullDay  = PERIODS.every((p) => isPeriodOccupied(day, p, occupiedSlots));
@@ -364,90 +419,64 @@ export function BookingSection() {
                   })}
                 </div>
 
-                <AnimatePresence>
-                  {selectedDate && (
-                    <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
-                      exit={{ opacity:0, y:-8 }} transition={{ duration:0.4 }}>
-                      <p className="text-xs font-semibold tracking-widest uppercase mb-4"
-                        style={{ color: "rgba(215,203,181,0.3)" }}>02 / Período</p>
-                      <div className="grid grid-cols-2 gap-3 mb-8">
-                        {PERIODS.map((p) => {
-                          const occupied = selectedDate ? isPeriodOccupied(selectedDate, p, occupiedSlots) : false;
-                          return occupied ? (
-                            <div key={p.id} className="relative rounded-xl p-4 text-left"
-                              style={{
-                                background: "rgba(255,255,255,0.01)",
-                                border: "1px solid rgba(215,203,181,0.04)",
-                                opacity: 0.4, cursor: "not-allowed",
-                              }}>
-                              <p className="text-sm font-semibold mb-1" style={{ color: "rgba(215,203,181,0.4)" }}>{p.label}</p>
-                              <p className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>{p.hours}</p>
-                              <p className="text-xs mt-1 font-semibold" style={{ color: "rgba(220,100,100,0.7)" }}>Indisponível</p>
-                            </div>
-                          ) : (
-                            <SelectionCard key={p.id} selected={selectedPeriod===p.id} onClick={()=>setSelectedPeriod(p.id)}>
-                              <p className="text-sm font-semibold mb-1"
-                                style={{ color: selectedPeriod===p.id ? "#d7cbb5" : "rgba(215,203,181,0.6)" }}>{p.label}</p>
-                              <p className="text-xs" style={{ color:"rgba(215,203,181,0.35)" }}>{p.hours}</p>
-                            </SelectionCard>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
+                    <AnimatePresence>
+                      {selectedDate && (
+                        <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
+                          exit={{ opacity:0, y:-8 }} transition={{ duration:0.4 }}>
+                          <p className="text-xs font-semibold tracking-widest uppercase mb-4"
+                            style={{ color: "rgba(215,203,181,0.3)" }}>03 / Período</p>
+                          <div className="grid grid-cols-2 gap-3 mb-6">
+                            {PERIODS.map((p) => {
+                              const occupied = isPeriodOccupied(selectedDate, p, occupiedSlots);
+                              return occupied ? (
+                                <div key={p.id} className="relative rounded-xl p-4 text-left"
+                                  style={{ background:"rgba(255,255,255,0.01)", border:"1px solid rgba(215,203,181,0.04)", opacity:0.4, cursor:"not-allowed" }}>
+                                  <p className="text-sm font-semibold mb-1" style={{ color:"rgba(215,203,181,0.4)" }}>{p.label}</p>
+                                  <p className="text-xs" style={{ color:"rgba(215,203,181,0.25)" }}>{p.hours}</p>
+                                  <p className="text-xs mt-1 font-semibold" style={{ color:"rgba(220,100,100,0.7)" }}>Indisponível</p>
+                                </div>
+                              ) : (
+                                <SelectionCard key={p.id} selected={selectedPeriod===p.id} onClick={()=>setSelectedPeriod(p.id)}>
+                                  <p className="text-sm font-semibold mb-1"
+                                    style={{ color:selectedPeriod===p.id ? "#d7cbb5" : "rgba(215,203,181,0.6)" }}>{p.label}</p>
+                                  <p className="text-xs" style={{ color:"rgba(215,203,181,0.35)" }}>{p.hours}</p>
+                                </SelectionCard>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
                 </AnimatePresence>
 
+                {/* Info multi-período */}
                 <AnimatePresence>
-                  {selectedDate && selectedPeriod && (
-                    <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
-                      exit={{ opacity:0, y:-8 }} transition={{ duration:0.4 }}>
-                      <p className="text-xs font-semibold tracking-widest uppercase mb-4"
-                        style={{ color: "rgba(215,203,181,0.3)" }}>03 / Plano</p>
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        {Object.entries(PLANS).map(([key,p]) => (
-                          <SelectionCard key={key} selected={selectedPlan===key} onClick={()=>setSelectedPlan(key)}>
-                            <p className="text-xs font-semibold mb-2"
-                              style={{ color: selectedPlan===key ? "#d7cbb5" : "rgba(215,203,181,0.5)" }}>{p.label}</p>
-                            <p className="text-xl font-extrabold"
-                              style={{ color: selectedPlan===key ? "#d7cbb5" : "rgba(215,203,181,0.4)" }}>
-                              R${p.price.toLocaleString("pt-BR")}
-                            </p>
-                            <p className="text-xs mt-0.5" style={{ color:"rgba(215,203,181,0.3)" }}>{p.installments}</p>
-                          </SelectionCard>
-                        ))}
-                      </div>
-                      <div className="rounded-2xl p-4 mb-6"
-                        style={{ background:"rgba(215,203,181,0.04)", border:"1px solid rgba(215,203,181,0.08)" }}>
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-xs mb-1" style={{ color:"rgba(215,203,181,0.35)" }}>Reserva selecionada</p>
-                            <p className="text-sm font-semibold" style={{ color:"#d7cbb5" }}>
-                              {format(selectedDate,"dd/MM/yyyy")} — {period?.hours}
-                            </p>
-                            <p className="text-xs mt-0.5" style={{ color:"rgba(215,203,181,0.4)" }}>{plan.label}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs mb-1" style={{ color:"rgba(215,203,181,0.35)" }}>Total</p>
-                            <p className="text-2xl font-extrabold" style={{ color:"#d7cbb5" }}>
-                              R${plan.price.toLocaleString("pt-BR")}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                  {plan.credits > 1 && (
+                    <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
+                      className="rounded-2xl p-4 mb-6"
+                      style={{ background:"rgba(215,203,181,0.04)", border:"1px solid rgba(215,203,181,0.08)" }}>
+                      <p className="text-xs font-semibold mb-2" style={{ color:"rgba(215,203,181,0.5)" }}>Como funciona</p>
+                      <p className="text-sm" style={{ color:"rgba(215,203,181,0.7)" }}>
+                        Você paga agora e recebe <strong style={{ color:"#d7cbb5" }}>{plan.credits} créditos</strong> válidos por{" "}
+                        <strong style={{ color:"#d7cbb5" }}>{plan.validityMonths} meses</strong>.
+                        Agende cada período quando quiser pelo link enviado no e-mail.
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <motion.button
                   className="w-full py-4 rounded-2xl text-sm font-bold transition-all"
-                  disabled={!selectedDate || !selectedPeriod}
+                  disabled={plan.credits === 1 && (!selectedDate || !selectedPeriod)}
                   onClick={() => setStep(2)}
                   style={{
-                    background: selectedDate && selectedPeriod ? "#d7cbb5" : "rgba(215,203,181,0.05)",
-                    color:      selectedDate && selectedPeriod ? "#321e07" : "rgba(215,203,181,0.2)",
-                    border: `1px solid ${selectedDate && selectedPeriod ? "transparent" : "rgba(215,203,181,0.06)"}`,
+                    background: (plan.credits > 1 || (selectedDate && selectedPeriod)) ? "#d7cbb5" : "rgba(215,203,181,0.05)",
+                    color:      (plan.credits > 1 || (selectedDate && selectedPeriod)) ? "#321e07" : "rgba(215,203,181,0.2)",
+                    border: `1px solid ${(plan.credits > 1 || (selectedDate && selectedPeriod)) ? "transparent" : "rgba(215,203,181,0.06)"}`,
                   }}
-                  whileHover={selectedDate && selectedPeriod ? { scale:1.02, boxShadow:"0 0 30px rgba(215,203,181,0.15)" } : {}}
+                  whileHover={(plan.credits > 1 || (selectedDate && selectedPeriod)) ? { scale:1.02, boxShadow:"0 0 30px rgba(215,203,181,0.15)" } : {}}
                   whileTap={{ scale:0.98 }}>
                   Continuar
                 </motion.button>
@@ -465,7 +494,7 @@ export function BookingSection() {
                   style={{ background:"rgba(215,203,181,0.04)", border:"1px solid rgba(215,203,181,0.07)" }}>
                   <div>
                     <p className="text-sm font-semibold" style={{ color:"rgba(215,203,181,0.7)" }}>
-                      {selectedDate && format(selectedDate,"dd/MM/yyyy")} — {period?.hours}
+                      {plan.credits > 1 ? `${plan.credits} créditos · ${plan.validityMonths} meses` : `${selectedDate ? format(selectedDate,"dd/MM/yyyy") : ""} — ${period?.hours ?? ""}`}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color:"rgba(215,203,181,0.35)" }}>{plan.label}</p>
                   </div>
@@ -555,7 +584,7 @@ export function BookingSection() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-sm font-semibold" style={{ color:"rgba(215,203,181,0.7)" }}>
-                        {selectedDate && format(selectedDate,"dd/MM/yyyy")} — {period?.hours}
+                        {plan.credits > 1 ? `${plan.credits} créditos · ${plan.validityMonths} meses` : `${selectedDate ? format(selectedDate,"dd/MM/yyyy") : ""} — ${period?.hours ?? ""}`}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color:"rgba(215,203,181,0.35)" }}>{plan.label}</p>
                     </div>
@@ -652,12 +681,30 @@ export function BookingSection() {
                       <span style={{ fontSize:28 }}>✓</span>
                     </motion.div>
                     <h3 className="text-2xl font-extrabold mb-2" style={{ color:"#d7cbb5" }}>Tudo pronto!</h3>
-                    <p className="text-sm mb-1" style={{ color:"rgba(215,203,181,0.5)" }}>
-                      Reserva confirmada e acesso facial cadastrado.
-                    </p>
-                    <p className="text-sm" style={{ color:"rgba(215,203,181,0.5)" }}>
-                      Você receberá um e-mail de confirmação em instantes.
-                    </p>
+                    {subscriptionMeta ? (
+                      <>
+                        <p className="text-sm mb-1" style={{ color:"rgba(215,203,181,0.5)" }}>
+                          Assinatura ativada · <strong style={{ color:"#d7cbb5" }}>{subscriptionMeta.credits} créditos</strong> disponíveis.
+                        </p>
+                        <p className="text-sm mb-4" style={{ color:"rgba(215,203,181,0.5)" }}>
+                          Você receberá um e-mail com o link para agendar seus períodos.
+                        </p>
+                        <a href={subscriptionMeta.portalUrl} target="_blank" rel="noopener noreferrer"
+                          className="inline-block px-6 py-3 rounded-xl text-sm font-bold"
+                          style={{ background:"rgba(215,203,181,0.12)", color:"#d7cbb5", border:"1px solid rgba(215,203,181,0.2)" }}>
+                          Agendar meu primeiro período →
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm mb-1" style={{ color:"rgba(215,203,181,0.5)" }}>
+                          Reserva confirmada e acesso facial cadastrado.
+                        </p>
+                        <p className="text-sm" style={{ color:"rgba(215,203,181,0.5)" }}>
+                          Você receberá um e-mail de confirmação em instantes.
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <>

@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createAsaasCustomer, createAsaasCharge } from "@/lib/asaas/client";
+import { sendBookingConfirmation, sendSubscriptionConfirmation } from "@/lib/resend/emails";
 import { z } from "zod";
-import { format, addDays } from "date-fns";
+import { format, addDays, addMonths } from "date-fns";
+
+// Configuração de planos
+const PLANS: Record<string, { label: string; price: number; credits: number; validityMonths: number | null }> = {
+  HUB_ONE:     { label: "HUB ONE — 1 período",       price: 300,  credits: 1,  validityMonths: null },
+  HUB_FIVE:    { label: "HUB FIVE — 5 períodos",     price: 1200, credits: 5,  validityMonths: 6  },
+  HUB_TEN:     { label: "HUB TEN — 10 períodos",     price: 2200, credits: 10, validityMonths: 8  },
+  HUB_PARTNER: { label: "HUB PARTNER — 15 períodos", price: 3000, credits: 15, validityMonths: 12 },
+};
 
 const cardSchema = z.object({
   holderName:  z.string().min(2),
@@ -17,102 +26,88 @@ const schema = z.object({
   email:       z.string().email(),
   phone:       z.string().optional(),
   cpf:         z.string().optional(),
-  startAt:     z.string().datetime(),
-  endAt:       z.string().datetime(),
+  planKey:     z.string(),
+  // HUB ONE only
+  startAt:     z.string().datetime().optional(),
+  endAt:       z.string().datetime().optional(),
   voucherCode: z.string().optional(),
-  card:        cardSchema.optional(), // presente se totalAmount > 0
+  card:        cardSchema.optional(),
 });
 
-// ── POST /api/bookings — criar reserva ────────────────────────────
+// ── POST /api/bookings ────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const body   = await req.json();
   const parsed = schema.safeParse(body);
-
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data    = parsed.data;
-  const startAt = new Date(data.startAt);
-  const endAt   = new Date(data.endAt);
+  const data = parsed.data;
+  const plan = PLANS[data.planKey];
+  if (!plan) return NextResponse.json({ error: "Plano inválido." }, { status: 400 });
 
-  // Verificar conflito de horário
-  const conflict = await prisma.booking.findFirst({
-    where: {
-      status: { in: ["PENDING", "PAID", "ACTIVE"] },
-      OR: [{ startAt: { lt: endAt }, endAt: { gt: startAt } }],
-    },
-  });
+  const isMultiPeriod = plan.credits > 1;
 
-  if (conflict) {
-    return NextResponse.json(
-      { error: "Horário indisponível. Por favor escolha outro período." },
-      { status: 409 }
-    );
+  // HUB ONE precisa de datas
+  if (!isMultiPeriod && (!data.startAt || !data.endAt)) {
+    return NextResponse.json({ error: "Data e horário obrigatórios para HUB ONE." }, { status: 400 });
+  }
+
+  // Verificar conflito (HUB ONE)
+  if (!isMultiPeriod && data.startAt && data.endAt) {
+    const startAt = new Date(data.startAt);
+    const endAt   = new Date(data.endAt);
+    const conflict = await prisma.booking.findFirst({
+      where: {
+        status: { in: ["PENDING", "PAID", "ACTIVE"] },
+        OR: [{ startAt: { lt: endAt }, endAt: { gt: startAt } }],
+      },
+    });
+    if (conflict) {
+      return NextResponse.json({ error: "Horário indisponível. Por favor escolha outro período." }, { status: 409 });
+    }
   }
 
   // Buscar/criar cliente
   let client = await prisma.client.findUnique({ where: { email: data.email } });
   if (!client) {
     client = await prisma.client.create({
-      data: {
-        name:  data.name,
-        email: data.email,
-        phone: data.phone,
-        cpf:   data.cpf || null,
-      },
+      data: { name: data.name, email: data.email, phone: data.phone, cpf: data.cpf || null },
     });
   } else if (data.cpf && !client.cpf) {
-    // Atualiza CPF se ainda não tinha
-    client = await prisma.client.update({
-      where: { id: client.id },
-      data:  { cpf: data.cpf },
-    });
+    client = await prisma.client.update({ where: { id: client.id }, data: { cpf: data.cpf } });
   }
 
-  // Calcular valor base (plano)
-  const hours        = (endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60);
-  const PRICE_PER_HOUR = 60; // R$/hora — ajuste conforme plano
-  let totalAmount    = hours * PRICE_PER_HOUR;
+  // Calcular valor e desconto (HUB ONE pode usar voucher)
+  let totalAmount    = plan.price;
   let discountAmount = 0;
   let voucherId: string | undefined;
 
-  // Aplicar voucher
-  if (data.voucherCode) {
+  if (!isMultiPeriod && data.voucherCode) {
     const voucher = await prisma.voucher.findUnique({
       where: { code: data.voucherCode.toUpperCase() },
     });
-
-    const valid =
-      voucher &&
-      voucher.active &&
+    const valid = voucher && voucher.active &&
       (!voucher.expiresAt || voucher.expiresAt > new Date()) &&
       (!voucher.maxUses   || voucher.usedCount < voucher.maxUses);
 
     if (valid && voucher) {
-      discountAmount =
-        voucher.discountType === "PERCENTAGE"
-          ? totalAmount * (voucher.discountValue / 100)
-          : Math.min(voucher.discountValue, totalAmount);
-
+      discountAmount = voucher.discountType === "PERCENTAGE"
+        ? totalAmount * (voucher.discountValue / 100)
+        : Math.min(voucher.discountValue, totalAmount);
       totalAmount = Math.max(0, totalAmount - discountAmount);
       voucherId   = voucher.id;
     }
   }
 
-  // ── Cobrança ASAAS ────────────────────────────────────────────────
+  // ── Processar pagamento ASAAS (se valor > 0) ──────────────────────
   let chargeId: string | null = null;
   let paymentUrl: string | null = null;
-  let bookingStatus: "PENDING" | "PAID" = totalAmount === 0 ? "PAID" : "PENDING";
 
   if (totalAmount > 0) {
     if (!data.card) {
-      return NextResponse.json(
-        { error: "Dados do cartão obrigatórios para reservas pagas." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Dados do cartão obrigatórios." }, { status: 400 });
     }
-
     try {
       const asaasCustomer = await createAsaasCustomer({
         name:     client.name,
@@ -120,13 +115,14 @@ export async function POST(req: NextRequest) {
         cpfCnpj: client.cpf ?? undefined,
         phone:    client.phone ?? undefined,
       });
-
       const charge = await createAsaasCharge({
         customer:    asaasCustomer.id,
         billingType: "CREDIT_CARD",
         value:       totalAmount,
         dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
-        description: `Reserva sala comercial — ${format(startAt, "dd/MM/yyyy HH:mm")} a ${format(endAt, "HH:mm")}`,
+        description: isMultiPeriod
+          ? `${plan.label} — ${plan.credits} períodos`
+          : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
         creditCard: {
           holderName:  data.card.holderName,
           number:      data.card.number.replace(/\s/g, ""),
@@ -141,10 +137,8 @@ export async function POST(req: NextRequest) {
           phone:    client.phone ?? undefined,
         },
       });
-
-      chargeId      = charge.id;
-      paymentUrl    = charge.invoiceUrl;
-      bookingStatus = "PAID";
+      chargeId   = charge.id;
+      paymentUrl = charge.invoiceUrl;
     } catch (err: unknown) {
       console.error("[bookings] ASAAS error:", err);
       const msg =
@@ -155,7 +149,41 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Criar booking
+  // ── FLUXO MULTI-PERÍODO: cria Subscription ───────────────────────
+  if (isMultiPeriod) {
+    const expiresAt = addMonths(new Date(), plan.validityMonths!);
+    const subscription = await prisma.subscription.create({
+      data: {
+        clientId:     client.id,
+        planKey:      data.planKey,
+        totalCredits: plan.credits,
+        expiresAt,
+        totalAmount,
+        asaasChargeId: chargeId,
+        status:        "ACTIVE",
+      },
+    });
+
+    const baseUrl   = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
+    const portalUrl = `${baseUrl}/minha-conta/${subscription.token}`;
+
+    // E-mail enviado APÓS cadastro facial (PATCH /api/bookings/[id]/facial)
+    // Retorna token para o frontend finalizar o facial e depois enviar o e-mail
+    return NextResponse.json({
+      subscriptionId: subscription.id,
+      subscriptionToken: subscription.token,
+      planLabel:   plan.label,
+      credits:     plan.credits,
+      expiresAt:   expiresAt.toISOString(),
+      portalUrl,
+      isMultiPeriod: true,
+      free: totalAmount === 0,
+    });
+  }
+
+  // ── FLUXO HUB ONE: cria Booking ──────────────────────────────────
+  const startAt = new Date(data.startAt!);
+  const endAt   = new Date(data.endAt!);
   const booking = await prisma.booking.create({
     data: {
       clientId:        client.id,
@@ -166,24 +194,20 @@ export async function POST(req: NextRequest) {
       voucherId,
       asaasChargeId:   chargeId,
       asaasPaymentUrl: paymentUrl,
-      status:          bookingStatus,
+      status:          totalAmount === 0 ? "PAID" : "PAID",
     },
   });
 
-  // Incrementar uso do voucher
   if (voucherId) {
-    await prisma.voucher.update({
-      where: { id: voucherId },
-      data:  { usedCount: { increment: 1 } },
-    });
+    await prisma.voucher.update({ where: { id: voucherId }, data: { usedCount: { increment: 1 } } });
   }
 
-  // E-mail é enviado APÓS o cadastro facial (PATCH /api/bookings/[id]/facial)
   return NextResponse.json({
     bookingId:     booking.id,
     totalAmount,
     discountAmount,
     free:          totalAmount === 0,
+    isMultiPeriod: false,
   });
 }
 
@@ -191,16 +215,13 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month");
-
   const activeStatuses = ["PENDING", "PAID", "ACTIVE"] as ("PENDING" | "PAID" | "ACTIVE")[];
 
   const where = month
     ? {
         startAt: {
           gte: new Date(`${month}-01`),
-          lt:  new Date(
-            new Date(`${month}-01`).setMonth(new Date(`${month}-01`).getMonth() + 1)
-          ),
+          lt:  new Date(new Date(`${month}-01`).setMonth(new Date(`${month}-01`).getMonth() + 1)),
         },
         status: { in: activeStatuses },
       }

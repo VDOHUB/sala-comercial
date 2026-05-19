@@ -5,12 +5,13 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/admin/dashboard",    label: "Dashboard"    },
-  { href: "/admin/reservas",     label: "Reservas"     },
-  { href: "/admin/clientes",     label: "Clientes"     },
-  { href: "/admin/vouchers",     label: "Vouchers"     },
-  { href: "/admin/acessos",      label: "Acessos"      },
-  { href: "/admin/configuracoes",label: "Configurações" },
+  { href: "/admin/dashboard",     label: "Dashboard"     },
+  { href: "/admin/reservas",      label: "Reservas"      },
+  { href: "/admin/assinaturas",   label: "Assinaturas"   },
+  { href: "/admin/clientes",      label: "Clientes"      },
+  { href: "/admin/vouchers",      label: "Vouchers"      },
+  { href: "/admin/acessos",       label: "Acessos"       },
+  { href: "/admin/configuracoes", label: "Configurações" },
 ];
 
 export function Sidebar() {

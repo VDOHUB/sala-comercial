@@ -17,7 +17,8 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bookings  Booking[]
+  bookings      Booking[]
+  subscriptions Subscription[]
 
   @@map("clients")
 }
@@ -42,6 +43,10 @@ model Booking {
   voucherId        String?
   voucher          Voucher?      @relation(fields: [voucherId], references: [id])
   discountAmount   Float?        @default(0)
+
+  // Assinatura (planos multi-período)
+  subscriptionId   String?
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
 
   // Control iD
   controlIdUserId  String?
@@ -87,6 +92,33 @@ model Voucher {
 enum DiscountType {
   PERCENTAGE
   FIXED
+}
+
+// ── Assinaturas (planos multi-período) ───────────────────────────
+model Subscription {
+  id           String             @id @default(cuid())
+  clientId     String
+  client       Client             @relation(fields: [clientId], references: [id])
+  planKey      String             // HUB_FIVE | HUB_TEN | HUB_PARTNER
+  totalCredits Int
+  usedCredits  Int                @default(0)
+  status       SubscriptionStatus @default(ACTIVE)
+  expiresAt    DateTime
+  totalAmount  Float
+  asaasChargeId String?           @unique
+  token        String             @unique @default(cuid()) // magic link
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  bookings     Booking[]
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
 }
 
 // ── Log de Acessos ────────────────────────────────────────────────

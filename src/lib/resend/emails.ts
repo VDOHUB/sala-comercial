@@ -187,3 +187,72 @@ export async function sendReminder(data: {
     html:    emailWrapper(content),
   });
 }
+
+// ── Confirmação de assinatura (planos multi-período) ──────────────
+export async function sendSubscriptionConfirmation(data: {
+  to: string;
+  clientName: string;
+  planLabel: string;
+  totalCredits: number;
+  expiresAt: Date;
+  portalUrl: string;
+}) {
+  const expiry = data.expiresAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "long" });
+
+  const content = `
+    <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
+      Assinatura ativada ✓
+    </h2>
+    <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.5);">
+      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>! Seu plano foi ativado com sucesso.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0"
+      style="background:rgba(26,14,5,0.04);border-radius:12px;padding:16px;border:1px solid rgba(26,14,5,0.07);">
+      <tr>
+        <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
+          📋 Plano
+        </td>
+        <td align="right" style="font-size:13px;font-weight:600;color:#1a0e05;padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
+          ${data.planLabel}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
+          🎯 Períodos disponíveis
+        </td>
+        <td align="right" style="font-size:13px;font-weight:700;color:#1a0e05;padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
+          ${data.totalCredits} períodos
+        </td>
+      </tr>
+      <tr>
+        <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;">
+          📅 Válido até
+        </td>
+        <td align="right" style="font-size:13px;font-weight:600;color:#1a0e05;padding:8px 0;">
+          ${expiry}
+        </td>
+      </tr>
+    </table>
+
+    <div style="margin-top:24px;">
+      <a href="${data.portalUrl}"
+        style="display:block;text-align:center;background:#1a0e05;color:#f5f0e8;
+        padding:14px 24px;border-radius:12px;font-size:14px;font-weight:700;
+        text-decoration:none;">
+        Agendar meus períodos →
+      </a>
+    </div>
+
+    <p style="margin:16px 0 0;font-size:12px;color:rgba(26,14,5,0.35);text-align:center;">
+      Use este link sempre que quiser agendar um novo período. Guarde-o com segurança.
+    </p>
+  `;
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      data.to,
+    subject: `VDO HUB — ${data.planLabel} ativado · ${data.totalCredits} períodos disponíveis`,
+    html:    emailWrapper(content),
+  });
+}
