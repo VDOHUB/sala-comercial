@@ -10,7 +10,7 @@ export async function sendBookingConfirmation(data: {
   startAt: Date;
   endAt: Date;
   totalAmount: number;
-  paymentUrl: string;
+  paymentUrl?: string;
 }) {
   const start = data.startAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const end   = data.endAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
@@ -27,7 +27,7 @@ export async function sendBookingConfirmation(data: {
         <li><strong>Saída:</strong> ${end}</li>
         <li><strong>Total:</strong> R$ ${data.totalAmount.toFixed(2)}</li>
       </ul>
-      <p><a href="${data.paymentUrl}">Clique aqui para realizar o pagamento</a></p>
+      ${data.paymentUrl ? `<p><a href="${data.paymentUrl}">Clique aqui para realizar o pagamento</a></p>` : `<p>Sua reserva foi confirmada e o acesso está liberado.</p>`}
     `,
   });
 }
