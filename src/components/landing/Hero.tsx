@@ -259,7 +259,7 @@ export function Hero() {
               style={{ color: "rgba(26,14,5,0.65)" }}
             >
               Aluguel por período com reconhecimento facial, pagamento online e
-              automação completa. Do agendamento ao acesso — sem fricção.
+              automação completa. Do agendamento ao acesso.
             </motion.p>
 
             <motion.div
