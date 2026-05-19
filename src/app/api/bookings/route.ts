@@ -30,8 +30,9 @@ const schema = z.object({
   // HUB ONE only
   startAt:     z.string().datetime().optional(),
   endAt:       z.string().datetime().optional(),
-  voucherCode: z.string().optional(),
-  card:        cardSchema.optional(),
+  voucherCode:       z.string().optional(),
+  installmentCount:  z.number().int().min(1).max(12).optional(),
+  card:              cardSchema.optional(),
 });
 
 // ── POST /api/bookings ────────────────────────────────────────────
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
         cpfCnpj: client.cpf ?? undefined,
         phone:    client.phone ?? undefined,
       });
+      const installments = (data.installmentCount ?? 1) > 1 ? data.installmentCount : undefined;
       const charge = await createAsaasCharge({
         customer:    asaasCustomer.id,
         billingType: "CREDIT_CARD",
@@ -123,6 +125,8 @@ export async function POST(req: NextRequest) {
         description: isMultiPeriod
           ? `${plan.label} — ${plan.credits} períodos`
           : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
+        installmentCount: installments,
+        installmentValue: installments ? Math.ceil((totalAmount / installments) * 100) / 100 : undefined,
         creditCard: {
           holderName:  data.card.holderName,
           number:      data.card.number.replace(/\s/g, ""),

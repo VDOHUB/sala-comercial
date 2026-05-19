@@ -27,6 +27,8 @@ export async function createAsaasCharge(data: {
   dueDate: string;          // YYYY-MM-DD
   description: string;
   externalReference?: string;
+  installmentCount?: number;
+  installmentValue?: number;
   creditCard?: {
     holderName: string;
     number: string;

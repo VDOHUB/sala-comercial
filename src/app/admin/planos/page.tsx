@@ -123,11 +123,13 @@ export default function PlanosPage() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
-                  style={{ color: "rgba(26,14,5,0.4)" }}>Parcelamento</label>
+                  style={{ color: "rgba(26,14,5,0.4)" }}>Máx. parcelas</label>
                 <input
-                  type="text"
-                  value={plan.installments}
-                  onChange={(e) => update(plan.key, "installments", e.target.value)}
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={plan.maxInstallments}
+                  onChange={(e) => update(plan.key, "maxInstallments", Number(e.target.value))}
                   className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
                   style={{ background: "rgba(26,14,5,0.04)", border: "1px solid rgba(26,14,5,0.1)", color: "#1a0e05" }}
                 />

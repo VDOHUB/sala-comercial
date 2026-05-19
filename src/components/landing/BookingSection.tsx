@@ -107,6 +107,7 @@ export function BookingSection() {
 
   // Cartão
   const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+  const [installmentCount, setInstallmentCount] = useState(1);
 
   // Resultado da criação
   const [bookingId, setBookingId]           = useState<string | null>(null);
@@ -231,9 +232,10 @@ export function BookingSection() {
     const isFree = (finalAmount ?? plan.price) === 0;
     const body: Record<string, unknown> = {
       ...form,
-      planKey:     selectedPlan,
-      voucherCode: form.voucherCode || undefined,
-      card:        isFree ? undefined : card,
+      planKey:          selectedPlan,
+      voucherCode:      form.voucherCode || undefined,
+      installmentCount: installmentCount > 1 ? installmentCount : undefined,
+      card:             isFree ? undefined : card,
     };
 
     if (!isMultiPeriod && selectedDate && period) {
@@ -382,7 +384,7 @@ export function BookingSection() {
                   style={{ color: "rgba(215,203,181,0.3)" }}>01 / Plano</p>
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {Object.entries(PLANS).map(([key,p]) => (
-                    <SelectionCard key={key} selected={selectedPlan===key} onClick={()=>{ setSelectedPlan(key); setSelectedDate(null); setSelectedPeriod(null); }}>
+                    <SelectionCard key={key} selected={selectedPlan===key} onClick={()=>{ setSelectedPlan(key); setSelectedDate(null); setSelectedPeriod(null); setInstallmentCount(1); }}>
                       <p className="text-xs font-semibold mb-1"
                         style={{ color: selectedPlan===key ? "#d7cbb5" : "rgba(215,203,181,0.5)" }}>{p.label}</p>
                       <p className="text-xl font-extrabold"
@@ -640,6 +642,40 @@ export function BookingSection() {
                 ) : (
                   /* Formulário de cartão */
                   <div className="space-y-4 mb-6">
+                    {/* Parcelamento */}
+                    <div>
+                      <label className="block text-xs font-semibold tracking-wider uppercase mb-2"
+                        style={{ color: "rgba(215,203,181,0.3)" }}>Parcelamento</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {Array.from({ length: plan.maxInstallments ?? 1 }, (_, i) => i + 1).map((n) => {
+                          const valorParcela = (total / n).toFixed(2).replace(".", ",");
+                          return (
+                            <motion.button
+                              key={n}
+                              type="button"
+                              onClick={() => setInstallmentCount(n)}
+                              className="rounded-xl py-2.5 px-2 text-center transition-all"
+                              style={{
+                                background: installmentCount === n ? "rgba(215,203,181,0.12)" : "rgba(255,255,255,0.02)",
+                                border: `1px solid ${installmentCount === n ? "rgba(215,203,181,0.25)" : "rgba(215,203,181,0.06)"}`,
+                              }}
+                              whileTap={{ scale: 0.97 }}
+                            >
+                              <p className="text-xs font-bold" style={{ color: installmentCount === n ? "#d7cbb5" : "rgba(215,203,181,0.4)" }}>
+                                {n}x
+                              </p>
+                              <p className="text-xs mt-0.5" style={{ color: "rgba(215,203,181,0.3)" }}>
+                                R${valorParcela}
+                              </p>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs mt-1.5" style={{ color: "rgba(215,203,181,0.25)" }}>
+                        Sem juros em todas as parcelas
+                      </p>
+                    </div>
+
                     <InputField label="Nome no cartão" required value={card.holderName}
                       onChange={(e) => setCard({...card, holderName: e.target.value})}
                       placeholder="Como está no cartão" />
