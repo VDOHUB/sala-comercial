@@ -31,7 +31,8 @@
       "WebFetch(domain:www.controlid.com.br)",
       "WebFetch(domain:www.youtube.com)",
       "Bash(npx vercel *)",
-      "Bash(mkdir -p \"D:\\\\1 - Projetos\\\\Carlos\\\\automacao_sala_comercial\\\\src\\\\app\\\\api\\\\bookings\\\\[id]\\\\facial\")"
+      "Bash(mkdir -p \"D:\\\\1 - Projetos\\\\Carlos\\\\automacao_sala_comercial\\\\src\\\\app\\\\api\\\\bookings\\\\[id]\\\\facial\")",
+      "Bash(copy \"public\\\\logo.png\" \"src\\\\app\\\\favicon.ico\" /Y)"
     ]
   }
 }

@@ -21,13 +21,33 @@ const STATUS = {
 } as Record<string, { label: string; bg: string; color: string }>;
 
 export default function ReservasPage() {
-  const [data, setData] = useState<{ bookings: Booking[]; total: number; pages: number } | null>(null);
-  const [status, setStatus] = useState("");
+  const [data, setData]       = useState<{ bookings: Booking[]; total: number } | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    const url = `/api/admin/reservas${status ? `?status=${status}` : ""}`;
+  function load() {
+    const url = `/api/admin/reservas${statusFilter ? `?status=${statusFilter}` : ""}`;
     fetch(url).then((r) => r.json()).then(setData);
-  }, [status]);
+  }
+
+  useEffect(() => { load(); }, [statusFilter]); // eslint-disable-line
+
+  async function handleDelete(id: string, clientName: string) {
+    if (!confirm(`Excluir reserva de ${clientName}? Esta ação não pode ser desfeita.`)) return;
+    setDeleting(id);
+    await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" });
+    setDeleting(null);
+    load();
+  }
+
+  async function handleStatus(id: string, newStatus: string) {
+    await fetch(`/api/admin/reservas/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    load();
+  }
 
   return (
     <div>
@@ -40,14 +60,10 @@ export default function ReservasPage() {
         </div>
 
         <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2"
-          style={{
-            background: "#f5f0e8",
-            border: "1px solid rgba(26,14,5,0.12)",
-            color: "#1a0e05",
-          }}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+          style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }}
         >
           <option value="">Todos os status</option>
           {Object.entries(STATUS).map(([v, s]) => (
@@ -57,7 +73,9 @@ export default function ReservasPage() {
       </div>
 
       {!data ? (
-        <div className="animate-pulse text-center py-16 text-sm" style={{ color: "rgba(26,14,5,0.38)" }}>Carregando reservas...</div>
+        <div className="animate-pulse text-center py-16 text-sm" style={{ color: "rgba(26,14,5,0.38)" }}>
+          Carregando reservas...
+        </div>
       ) : data.bookings.length === 0 ? (
         <div className="text-center py-20" style={{ color: "rgba(26,14,5,0.38)" }}>
           <p className="font-medium text-lg mb-1" style={{ color: "#1a0e05" }}>Nenhuma reserva encontrada</p>
@@ -67,49 +85,80 @@ export default function ReservasPage() {
           {data.bookings.map((b) => {
             const s = STATUS[b.status];
             return (
-              <div key={b.id} className="rounded-2xl p-5" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+              <div key={b.id} className="rounded-2xl p-5"
+                style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
                 <div className="flex items-start justify-between gap-4">
+
+                  {/* Informações */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <p className="font-semibold" style={{ color: "#1a0e05" }}>{b.client.name}</p>
                       {s && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: s.bg, color: s.color }}>
-                          {s.label}
-                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ background: s.bg, color: s.color }}>{s.label}</span>
                       )}
                       {b.voucher && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(124,58,237,0.08)", color: "#5b21b6" }}>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ background: "rgba(124,58,237,0.08)", color: "#5b21b6" }}>
                           {b.voucher.code}
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm" style={{ color: "rgba(26,14,5,0.45)" }}>
+                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm"
+                      style={{ color: "rgba(26,14,5,0.45)" }}>
                       <span>{b.client.email}</span>
                       {b.client.phone && <span>{b.client.phone}</span>}
-                      <span>{format(new Date(b.startAt), "dd/MM/yyyy · HH:mm", { locale: ptBR })} às {format(new Date(b.endAt), "HH:mm")}</span>
+                      <span>
+                        {format(new Date(b.startAt), "dd/MM/yyyy · HH:mm", { locale: ptBR })} às {format(new Date(b.endAt), "HH:mm")}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-2xl font-bold" style={{ color: "#1a0e05" }}>
-                      R$ {b.totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </p>
-                    {b.discountAmount > 0 && (
-                      <p className="text-xs" style={{ color: "#166534" }}>
-                        -{b.discountAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} desconto
+
+                  {/* Valor + ações */}
+                  <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold" style={{ color: "#1a0e05" }}>
+                        R$ {b.totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
-                    )}
-                    {b.asaasPaymentUrl && b.status === "PENDING" && (
-                      <a
-                        href={b.asaasPaymentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs hover:underline mt-1 inline-block"
-                        style={{ color: "#1a0e05" }}
+                      {b.discountAmount > 0 && (
+                        <p className="text-xs" style={{ color: "#166534" }}>
+                          −{b.discountAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} desconto
+                        </p>
+                      )}
+                      {b.asaasPaymentUrl && b.status === "PENDING" && (
+                        <a href={b.asaasPaymentUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-xs hover:underline mt-1 inline-block" style={{ color: "#1a0e05" }}>
+                          Ver link de pagamento →
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Botões de ação */}
+                    <div className="flex items-center gap-2">
+                      {/* Alterar status */}
+                      <select
+                        value={b.status}
+                        onChange={(e) => handleStatus(b.id, e.target.value)}
+                        className="rounded-xl px-3 py-1.5 text-xs focus:outline-none"
+                        style={{ background: "rgba(26,14,5,0.05)", border: "1px solid rgba(26,14,5,0.1)", color: "#1a0e05" }}
                       >
-                        Ver link de pagamento →
-                      </a>
-                    )}
+                        {Object.entries(STATUS).map(([v, st]) => (
+                          <option key={v} value={v}>{st.label}</option>
+                        ))}
+                      </select>
+
+                      {/* Excluir */}
+                      <button
+                        onClick={() => handleDelete(b.id, b.client.name)}
+                        disabled={deleting === b.id}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40"
+                        style={{ background: "rgba(220,38,38,0.07)", color: "#991b1b" }}
+                      >
+                        {deleting === b.id ? "Excluindo..." : "Excluir"}
+                      </button>
+                    </div>
                   </div>
+
                 </div>
               </div>
             );

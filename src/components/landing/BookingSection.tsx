@@ -70,11 +70,27 @@ function InputField({ label, ...props }: React.InputHTMLAttributes<HTMLInputElem
 
 // ── Componente principal ──────────────────────────────────────────
 
+// ── Verifica se um período está ocupado ──────────────────────────
+type OccupiedSlot = { startAt: string; endAt: string };
+
+function isPeriodOccupied(date: Date, period: typeof PERIODS[0], slots: OccupiedSlot[]) {
+  const start = new Date(date); start.setHours(period.startHour, 0, 0, 0);
+  const end   = new Date(date); end.setHours(period.endHour,   0, 0, 0);
+  return slots.some((s) => {
+    const sStart = new Date(s.startAt);
+    const sEnd   = new Date(s.endAt);
+    return sStart < end && sEnd > start;
+  });
+}
+
 export function BookingSection() {
   const [step, setStep]               = useState<1 | 2 | 3 | 4>(1);
   const [selectedDate, setSelectedDate]     = useState<Date | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan]     = useState<string>("HUB_ONE");
+
+  // Slots ocupados (carregados do servidor)
+  const [occupiedSlots, setOccupiedSlots] = useState<OccupiedSlot[]>([]);
 
   // Dados pessoais
   const [form, setForm] = useState({ name: "", email: "", phone: "", cpf: "", voucherCode: "" });
@@ -105,6 +121,14 @@ export function BookingSection() {
 
   const plan   = PLANS[selectedPlan];
   const period = PERIODS.find((p) => p.id === selectedPeriod);
+
+  // Carrega slots ocupados ao montar
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((r) => r.json())
+      .then((slots) => { if (Array.isArray(slots)) setOccupiedSlots(slots); })
+      .catch(() => {});
+  }, []);
 
   // ── Câmera ────────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
@@ -309,16 +333,21 @@ export function BookingSection() {
 
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-8 -mx-1 px-1">
                   {DAYS.map((day) => {
-                    const sel = selectedDate && format(day,"yyyy-MM-dd") === format(selectedDate,"yyyy-MM-dd");
+                    const sel      = selectedDate && format(day,"yyyy-MM-dd") === format(selectedDate,"yyyy-MM-dd");
+                    const fullDay  = PERIODS.every((p) => isPeriodOccupied(day, p, occupiedSlots));
                     return (
                       <motion.button key={day.toISOString()} type="button"
+                        disabled={fullDay}
                         onClick={() => { setSelectedDate(day); setSelectedPeriod(null); }}
                         className="flex-shrink-0 flex flex-col items-center py-3 px-2 rounded-xl w-12 transition-all"
                         style={{
-                          background: sel ? "rgba(215,203,181,0.1)" : "rgba(255,255,255,0.02)",
-                          border: `1px solid ${sel ? "rgba(215,203,181,0.2)" : "rgba(215,203,181,0.06)"}`,
+                          background: fullDay ? "rgba(255,255,255,0.01)" : sel ? "rgba(215,203,181,0.1)" : "rgba(255,255,255,0.02)",
+                          border: `1px solid ${fullDay ? "rgba(215,203,181,0.03)" : sel ? "rgba(215,203,181,0.2)" : "rgba(215,203,181,0.06)"}`,
+                          opacity: fullDay ? 0.35 : 1,
+                          cursor: fullDay ? "not-allowed" : "pointer",
                         }}
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        whileHover={!fullDay ? { scale: 1.05 } : {}}
+                        whileTap={!fullDay ? { scale: 0.95 } : {}}>
                         <span className="text-xs" style={{ color: "rgba(215,203,181,0.35)" }}>
                           {format(day,"EEE",{locale:ptBR})}
                         </span>
@@ -329,6 +358,7 @@ export function BookingSection() {
                         <span className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>
                           {format(day,"MMM",{locale:ptBR})}
                         </span>
+                        {fullDay && <span className="text-xs mt-0.5" style={{ color: "rgba(215,203,181,0.25)", fontSize: 9 }}>lotado</span>}
                       </motion.button>
                     );
                   })}
@@ -341,13 +371,27 @@ export function BookingSection() {
                       <p className="text-xs font-semibold tracking-widest uppercase mb-4"
                         style={{ color: "rgba(215,203,181,0.3)" }}>02 / Período</p>
                       <div className="grid grid-cols-2 gap-3 mb-8">
-                        {PERIODS.map((p) => (
-                          <SelectionCard key={p.id} selected={selectedPeriod===p.id} onClick={()=>setSelectedPeriod(p.id)}>
-                            <p className="text-sm font-semibold mb-1"
-                              style={{ color: selectedPeriod===p.id ? "#d7cbb5" : "rgba(215,203,181,0.6)" }}>{p.label}</p>
-                            <p className="text-xs" style={{ color:"rgba(215,203,181,0.35)" }}>{p.hours}</p>
-                          </SelectionCard>
-                        ))}
+                        {PERIODS.map((p) => {
+                          const occupied = selectedDate ? isPeriodOccupied(selectedDate, p, occupiedSlots) : false;
+                          return occupied ? (
+                            <div key={p.id} className="relative rounded-xl p-4 text-left"
+                              style={{
+                                background: "rgba(255,255,255,0.01)",
+                                border: "1px solid rgba(215,203,181,0.04)",
+                                opacity: 0.4, cursor: "not-allowed",
+                              }}>
+                              <p className="text-sm font-semibold mb-1" style={{ color: "rgba(215,203,181,0.4)" }}>{p.label}</p>
+                              <p className="text-xs" style={{ color: "rgba(215,203,181,0.25)" }}>{p.hours}</p>
+                              <p className="text-xs mt-1 font-semibold" style={{ color: "rgba(220,100,100,0.7)" }}>Indisponível</p>
+                            </div>
+                          ) : (
+                            <SelectionCard key={p.id} selected={selectedPeriod===p.id} onClick={()=>setSelectedPeriod(p.id)}>
+                              <p className="text-sm font-semibold mb-1"
+                                style={{ color: selectedPeriod===p.id ? "#d7cbb5" : "rgba(215,203,181,0.6)" }}>{p.label}</p>
+                              <p className="text-xs" style={{ color:"rgba(215,203,181,0.35)" }}>{p.hours}</p>
+                            </SelectionCard>
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
