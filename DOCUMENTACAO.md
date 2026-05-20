@@ -1,7 +1,7 @@
 # VDO HUB — Documentação Técnica Completa
 
 > Última atualização: Maio 2026  
-> Desenvolvido por: Johni Michael / Carlos
+> Desenvolvido por: Johni Michael Gomes
 
 ---
 
