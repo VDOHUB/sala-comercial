@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { loginControlId, setControlIdUserActive } from "@/lib/controlid/client";
+import { loginControlId, enableControlIdUser, disableControlIdUser } from "@/lib/controlid/client";
 
 // GET /api/cron/access
 // Chamado a cada 5 minutos pelo Vercel Cron.
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       continue;
     }
     try {
-      await setControlIdUserActive(session, userId, true);
+      await enableControlIdUser(session, userId);
       await prisma.booking.update({ where: { id: booking.id }, data: { status: "ACTIVE" } });
       results.granted++;
       console.log(`[cron/access] granted access to user ${userId} (booking ${booking.id})`);
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
         },
       });
       if (!otherActive) {
-        await setControlIdUserActive(session, userId, false);
+        await disableControlIdUser(session, userId);
         console.log(`[cron/access] revoked access from user ${userId} (booking ${booking.id})`);
       }
       await prisma.booking.update({ where: { id: booking.id }, data: { status: "COMPLETED" } });

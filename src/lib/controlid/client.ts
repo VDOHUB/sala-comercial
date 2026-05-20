@@ -16,7 +16,7 @@ export async function loginControlId(): Promise<string> {
   return data.session;
 }
 
-// ── Helper ────────────────────────────────────────────────────────
+// ── Helper POST ───────────────────────────────────────────────────
 async function fcgi<T>(session: string, path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE_URL}/${path}?session=${session}`, {
     method: "POST",
@@ -37,48 +37,55 @@ export async function createControlIdUser(
   opts: { name: string; registration: string }
 ): Promise<{ userId: number }> {
   const data = await fcgi<{ ids?: number[] }>(session, "create_objects.fcgi", {
-    object: "user",
-    values: [{ name: opts.name, registration: opts.registration, password: "", active: 1 }],
+    object: "users",
+    values: [{ name: opts.name, registration: opts.registration, password: "" }],
   });
   const id = data.ids?.[0];
   if (!id) throw new Error("ControlID createUser: no id returned");
   return { userId: id };
 }
 
-// ── Definir foto do usuário ───────────────────────────────────────
+// ── Definir foto do usuário (base64) ─────────────────────────────
 export async function setControlIdPhoto(
   session: string,
   userId: number,
-  photoBase64: string   // base64 sem prefixo data:image/...
+  photoBase64: string  // base64 sem prefixo data:image/...
 ): Promise<void> {
-  await fcgi(session, "create_objects.fcgi", {
-    object: "user_image",
-    values: [{ user_id: userId, image: photoBase64 }],
+  await fcgi(session, "user_set_image_list.fcgi", {
+    match: false,
+    user_images: [{
+      user_id:   userId,
+      timestamp: Math.floor(Date.now() / 1000),
+      image:     photoBase64,
+    }],
   });
 }
 
-// ── Habilitar / Desabilitar acesso ────────────────────────────────
-export async function setControlIdUserActive(
+// ── Habilitar acesso (begin_time agora, end_time daqui 10 anos) ──
+export async function enableControlIdUser(
   session: string,
-  userId: number,
-  active: boolean
+  userId: number
 ): Promise<void> {
+  const now     = Math.floor(Date.now() / 1000);
+  const farFuture = now + 10 * 365 * 24 * 3600; // ~10 anos
   await fcgi(session, "modify_objects.fcgi", {
-    object: "user",
-    values: [{ id: userId, active: active ? 1 : 0 }],
+    object: "users",
+    values: { begin_time: now, end_time: farFuture },
+    where:  { users: { id: userId } },
   });
 }
 
-// ── Buscar usuário por registration ──────────────────────────────
-export async function findControlIdUser(
+// ── Desabilitar acesso (end_time no passado) ──────────────────────
+export async function disableControlIdUser(
   session: string,
-  registration: string
-): Promise<number | null> {
-  const data = await fcgi<{ users?: { id: number }[] }>(session, "load_objects.fcgi", {
-    object: "user",
-    where: { registration: { "=": registration } },
+  userId: number
+): Promise<void> {
+  const past = Math.floor(Date.now() / 1000) - 1;
+  await fcgi(session, "modify_objects.fcgi", {
+    object: "users",
+    values: { end_time: past },
+    where:  { users: { id: userId } },
   });
-  return data.users?.[0]?.id ?? null;
 }
 
 // ── Deletar usuário ───────────────────────────────────────────────
@@ -87,7 +94,7 @@ export async function deleteControlIdUser(
   userId: number
 ): Promise<void> {
   await fcgi(session, "destroy_objects.fcgi", {
-    object: "user",
-    where: { id: { "=": userId } },
+    object: "users",
+    where:  { users: { id: userId } },
   });
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Receiver } from "@upstash/qstash";
 import { prisma } from "@/lib/prisma";
-import { loginControlId, setControlIdUserActive } from "@/lib/controlid/client";
+import { loginControlId, disableControlIdUser } from "@/lib/controlid/client";
 
 export async function POST(req: NextRequest) {
   // Verificar assinatura do QStash em runtime (não no build)
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!otherActive) {
-      await setControlIdUserActive(session, userId, false);
+      await disableControlIdUser(session, userId);
       console.log(`[access/revoke] user ${userId} deactivated for booking ${bookingId}`);
     } else {
       console.log(`[access/revoke] user ${userId} has another active booking — kept active`);

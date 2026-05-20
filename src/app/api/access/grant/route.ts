@@ -5,7 +5,7 @@ import {
   loginControlId,
   createControlIdUser,
   setControlIdPhoto,
-  setControlIdUserActive,
+  enableControlIdUser,
 } from "@/lib/controlid/client";
 
 export async function POST(req: NextRequest) {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       console.log(`[access/grant] client ${client.id} registered as iDFace user ${userId}`);
     }
 
-    await setControlIdUserActive(session, userId, true);
+    await enableControlIdUser(session, userId);
     await prisma.booking.update({ where: { id: bookingId }, data: { status: "ACTIVE" } });
     console.log(`[access/grant] user ${userId} activated for booking ${bookingId}`);
     return NextResponse.json({ ok: true });
