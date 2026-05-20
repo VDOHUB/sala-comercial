@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { Receiver } from "@upstash/qstash";
 import { prisma } from "@/lib/prisma";
 import { loginControlId, setControlIdUserActive } from "@/lib/controlid/client";
 
-async function handler(req: NextRequest) {
-  const { bookingId } = await req.json() as { bookingId: string };
+export async function POST(req: NextRequest) {
+  // Verificar assinatura do QStash em runtime (não no build)
+  const receiver = new Receiver({
+    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
+    nextSigningKey:    process.env.QSTASH_NEXT_SIGNING_KEY!,
+  });
+
+  const body = await req.text();
+  const signature = req.headers.get("upstash-signature") ?? "";
+
+  const valid = await receiver.verify({ signature, body }).catch(() => false);
+  if (!valid) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { bookingId } = JSON.parse(body) as { bookingId: string };
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -25,7 +39,7 @@ async function handler(req: NextRequest) {
   try {
     const session = await loginControlId();
 
-    // Verificar se o cliente tem outra reserva ativa agora antes de desativar
+    // Verificar se o cliente tem outra reserva ativa antes de desativar
     const otherActive = await prisma.booking.findFirst({
       where: {
         clientId: booking.clientId,
@@ -50,5 +64,3 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ error: "iDFace error" }, { status: 500 });
   }
 }
-
-export const POST = verifySignatureAppRouter(handler);
