@@ -51,14 +51,20 @@ export async function setControlIdPhoto(
   userId: number,
   photoBase64: string  // base64 sem prefixo data:image/...
 ): Promise<void> {
-  await fcgi(session, "user_set_image_list.fcgi", {
-    match: false,
-    user_images: [{
-      user_id:   userId,
-      timestamp: Math.floor(Date.now() / 1000),
-      image:     photoBase64,
-    }],
-  });
+  const data = await fcgi<{ results?: { user_id: number; success: boolean; errors: string }[] }>(
+    session, "user_set_image_list.fcgi", {
+      match: true,
+      user_images: [{
+        user_id:   userId,
+        timestamp: Math.floor(Date.now() / 1000),
+        image:     photoBase64,
+      }],
+    }
+  );
+  const result = data.results?.[0];
+  if (!result?.success) {
+    throw new Error(`ControlID face upload failed for user ${userId}: ${result?.errors || "unknown error"}`);
+  }
 }
 
 // ── Habilitar acesso (begin_time agora, end_time daqui 10 anos) ──

@@ -45,8 +45,7 @@ export async function POST(req: NextRequest) {
 
     let userId = client.controlidUserId;
 
-    // Se ainda não foi registrado no iDFace (ex: PC estava desligado na compra),
-    // registra agora antes de liberar o acesso
+    // Se não tem usuário no iDFace, cria agora
     if (!userId) {
       if (!client.facePhoto) {
         console.warn(`[access/grant] client ${client.id} has no facePhoto — cannot register`);
@@ -60,15 +59,22 @@ export async function POST(req: NextRequest) {
       });
       userId = created.userId;
 
-      const base64 = client.facePhoto.replace(/^data:image\/\w+;base64,/, "");
-      await setControlIdPhoto(session, userId, base64);
-
       await prisma.client.update({
         where: { id: client.id },
         data:  { controlidUserId: userId },
       });
+    }
 
-      console.log(`[access/grant] client ${client.id} registered as iDFace user ${userId}`);
+    // Sempre tenta enviar a foto (re-tenta se falhou na compra)
+    if (client.facePhoto) {
+      try {
+        const base64 = client.facePhoto.replace(/^data:image\/\w+;base64,/, "");
+        await setControlIdPhoto(session, userId, base64);
+        console.log(`[access/grant] face photo uploaded for user ${userId}`);
+      } catch (photoErr) {
+        // Log mas não bloqueia — pode ser que a foto já esteja cadastrada
+        console.warn(`[access/grant] face upload warning for user ${userId}:`, photoErr);
+      }
     }
 
     await enableControlIdUser(session, userId);
