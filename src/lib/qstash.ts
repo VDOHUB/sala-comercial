@@ -1,6 +1,9 @@
 import { Client } from "@upstash/qstash";
 
-export const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
+export const qstash = new Client({
+  token:   process.env.QSTASH_TOKEN!,
+  baseUrl: process.env.QSTASH_URL ?? "https://qstash.upstash.io",
+});
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
 

@@ -5,7 +5,6 @@ import {
   loginControlId,
   createControlIdUser,
   setControlIdPhoto,
-  findControlIdUser,
 } from "@/lib/controlid/client";
 import { scheduleGrant, scheduleRevoke } from "@/lib/qstash";
 
@@ -22,17 +21,11 @@ async function registerFaceOnDevice(client: {
     let userId = client.controlidUserId;
 
     if (!userId) {
-      // Checar se já existe no device (pode ter sido criado antes)
-      const existing = await findControlIdUser(session, client.id);
-      if (existing) {
-        userId = existing;
-      } else {
-        const created = await createControlIdUser(session, {
-          name:         client.name,
-          registration: client.id,
-        });
-        userId = created.userId;
-      }
+      const created = await createControlIdUser(session, {
+        name:         client.name,
+        registration: client.id,
+      });
+      userId = created.userId;
     }
 
     // Remover prefixo data:image/...;base64, se presente
