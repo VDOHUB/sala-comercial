@@ -1,6 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBookingConfirmation, sendSubscriptionConfirmation } from "@/lib/resend/emails";
+import {
+  loginControlId,
+  createControlIdUser,
+  setControlIdPhoto,
+  findControlIdUser,
+} from "@/lib/controlid/client";
+
+// ── Registrar usuário no iDFace ───────────────────────────────────
+async function registerFaceOnDevice(client: {
+  id: string;
+  name: string;
+  controlidUserId: number | null;
+}, photoBase64: string): Promise<number | null> {
+  try {
+    const session = await loginControlId();
+
+    // registration = clientId (garante unicidade)
+    let userId = client.controlidUserId;
+
+    if (!userId) {
+      // Checar se já existe no device (pode ter sido criado antes)
+      const existing = await findControlIdUser(session, client.id);
+      if (existing) {
+        userId = existing;
+      } else {
+        const created = await createControlIdUser(session, {
+          name:         client.name,
+          registration: client.id,
+        });
+        userId = created.userId;
+      }
+    }
+
+    // Remover prefixo data:image/...;base64, se presente
+    const base64 = photoBase64.replace(/^data:image\/\w+;base64,/, "");
+    await setControlIdPhoto(session, userId, base64);
+
+    // Salvar userId no banco
+    await prisma.client.update({
+      where: { id: client.id },
+      data:  { controlidUserId: userId },
+    });
+
+    console.log(`[facial] iDFace user ${userId} registered for client ${client.id}`);
+    return userId;
+  } catch (err) {
+    // Não falhar o fluxo de reserva por erro no iDFace
+    console.error("[facial] iDFace registration error:", err);
+    return null;
+  }
+}
 
 // PATCH /api/bookings/[id]/facial — salva foto e envia e-mail
 // [id] pode ser bookingId (HUB ONE) ou subscriptionId (multi-período)
@@ -29,6 +80,9 @@ export async function PATCH(
       data:  { facePhoto: photoBase64 },
     });
 
+    // Registrar no iDFace (não bloqueia se falhar)
+    await registerFaceOnDevice(subscription.client, photoBase64);
+
     try {
       await sendSubscriptionConfirmation({
         to:           subscription.client.email,
@@ -56,6 +110,9 @@ export async function PATCH(
     where: { id: booking.clientId },
     data:  { facePhoto: photoBase64 },
   });
+
+  // Registrar no iDFace (não bloqueia se falhar)
+  await registerFaceOnDevice(booking.client, photoBase64);
 
   try {
     await sendBookingConfirmation({

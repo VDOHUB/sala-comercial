@@ -13,8 +13,9 @@ model Client {
   email     String   @unique
   phone     String?
   cpf       String?  @unique
-  facePhoto String?  // base64 JPEG para Control iD
-  createdAt DateTime @default(now())
+  facePhoto       String?  // base64 JPEG para Control iD
+  controlidUserId Int?     // ID do usuário no iDFace
+  createdAt       DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   bookings      Booking[]
