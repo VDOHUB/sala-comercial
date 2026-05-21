@@ -106,7 +106,7 @@ export function BookingSection() {
   const [voucherError, setVoucherError]     = useState("");
 
   // Cartão
-  const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+  const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "" });
   const [installmentCount, setInstallmentCount] = useState(1);
 
   // Resultado da criação
@@ -694,6 +694,9 @@ export function BookingSection() {
                       onChange={(e) => setCard({...card, ccv: e.target.value.replace(/\D/g,"").slice(0,4)})}
                       placeholder="123" maxLength={4} inputMode="numeric" />
                   </div>
+                  <InputField label="CEP do titular" required value={card.postalCode}
+                    onChange={(e) => setCard({...card, postalCode: e.target.value.replace(/\D/g,"").slice(0,8)})}
+                    placeholder="00000000" maxLength={8} inputMode="numeric" />
                 </div>
 
                 {/* Termos de uso */}

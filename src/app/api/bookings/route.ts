@@ -19,6 +19,7 @@ const cardSchema = z.object({
   expiryMonth: z.string().length(2),
   expiryYear:  z.string().min(4),
   ccv:         z.string().min(3),
+  postalCode:  z.string().min(8).max(8).optional(),
 });
 
 const schema = z.object({
@@ -135,10 +136,11 @@ export async function POST(req: NextRequest) {
       ccv:         data.card.ccv,
     };
     const holderInfo = {
-      name:     client.name,
-      email:    client.email,
-      cpfCnpj: client.cpf ?? "00000000000",
-      phone:    client.phone ?? undefined,
+      name:        client.name,
+      email:       client.email,
+      cpfCnpj:    client.cpf ?? "00000000000",
+      phone:       client.phone ?? undefined,
+      postalCode:  data.card.postalCode ?? undefined,
     };
 
     if (totalAmount > 0) {
