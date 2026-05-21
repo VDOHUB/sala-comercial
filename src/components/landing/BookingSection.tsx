@@ -233,7 +233,8 @@ export function BookingSection() {
     const body: Record<string, unknown> = {
       ...form,
       planKey:          selectedPlan,
-      voucherCode:      form.voucherCode || undefined,
+      // voucher só se aplica a HUB ONE; nunca enviar para multi-período
+      voucherCode:      (!isMultiPeriod && form.voucherCode) ? form.voucherCode : undefined,
       installmentCount: installmentCount > 1 ? installmentCount : undefined,
       card,
     };
@@ -323,7 +324,8 @@ export function BookingSection() {
     }
   }
 
-  const total    = finalAmount ?? plan.price;
+  // Para multi-período, voucher não se aplica — sempre usa preço cheio do plano
+  const total    = plan.credits > 1 ? plan.price : (finalAmount ?? plan.price);
   const isFree   = total === 0;
   const steps    = ["Data e período", "Seus dados", "Pagamento", "Cadastro facial"];
 
@@ -402,7 +404,7 @@ export function BookingSection() {
                   style={{ color: "rgba(215,203,181,0.3)" }}>01 / Plano</p>
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {Object.entries(PLANS).map(([key,p]) => (
-                    <SelectionCard key={key} selected={selectedPlan===key} onClick={()=>{ setSelectedPlan(key); setSelectedDate(null); setSelectedPeriod(null); setInstallmentCount(1); }}>
+                    <SelectionCard key={key} selected={selectedPlan===key} onClick={()=>{ setSelectedPlan(key); setSelectedDate(null); setSelectedPeriod(null); setInstallmentCount(1); setFinalAmount(null); setDiscountAmount(0); setVoucherChecked(false); setForm(f=>({...f, voucherCode:""})); }}>
                       <p className="text-xs font-semibold mb-1"
                         style={{ color: selectedPlan===key ? "#d7cbb5" : "rgba(215,203,181,0.5)" }}>{p.label}</p>
                       <p className="text-xl font-extrabold"
@@ -557,36 +559,38 @@ export function BookingSection() {
                       placeholder="000.000.000-00" maxLength={11} />
                   </div>
 
-                  {/* Voucher */}
-                  <div>
-                    <label className="block text-xs font-semibold tracking-wider uppercase mb-2"
-                      style={{ color:"rgba(215,203,181,0.3)" }}>Cupom de desconto</label>
-                    <div className="flex gap-2">
-                      <input
-                        value={form.voucherCode}
-                        onChange={(e) => { setForm({...form, voucherCode: e.target.value.toUpperCase()}); setVoucherChecked(false); }}
-                        placeholder="CODIGO"
-                        className="flex-1 rounded-xl px-4 py-3 text-sm outline-none uppercase"
-                        style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(215,203,181,0.08)", color:"#d7cbb5" }}
-                        onFocus={(e) => e.currentTarget.style.borderColor="rgba(215,203,181,0.2)"}
-                        onBlur={(e)  => e.currentTarget.style.borderColor="rgba(215,203,181,0.08)"}
-                      />
-                      <motion.button type="button" onClick={checkVoucher}
-                        className="px-4 py-3 rounded-xl text-sm font-semibold"
-                        style={{ background:"rgba(215,203,181,0.07)", color:"rgba(215,203,181,0.6)", border:"1px solid rgba(215,203,181,0.1)" }}
-                        whileTap={{ scale:0.97 }}>
-                        Aplicar
-                      </motion.button>
+                  {/* Voucher — apenas HUB ONE */}
+                  {plan.credits === 1 && (
+                    <div>
+                      <label className="block text-xs font-semibold tracking-wider uppercase mb-2"
+                        style={{ color:"rgba(215,203,181,0.3)" }}>Cupom de desconto</label>
+                      <div className="flex gap-2">
+                        <input
+                          value={form.voucherCode}
+                          onChange={(e) => { setForm({...form, voucherCode: e.target.value.toUpperCase()}); setVoucherChecked(false); }}
+                          placeholder="CODIGO"
+                          className="flex-1 rounded-xl px-4 py-3 text-sm outline-none uppercase"
+                          style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(215,203,181,0.08)", color:"#d7cbb5" }}
+                          onFocus={(e) => e.currentTarget.style.borderColor="rgba(215,203,181,0.2)"}
+                          onBlur={(e)  => e.currentTarget.style.borderColor="rgba(215,203,181,0.08)"}
+                        />
+                        <motion.button type="button" onClick={checkVoucher}
+                          className="px-4 py-3 rounded-xl text-sm font-semibold"
+                          style={{ background:"rgba(215,203,181,0.07)", color:"rgba(215,203,181,0.6)", border:"1px solid rgba(215,203,181,0.1)" }}
+                          whileTap={{ scale:0.97 }}>
+                          Aplicar
+                        </motion.button>
+                      </div>
+                      {voucherError && (
+                        <p className="text-xs mt-1.5" style={{ color:"rgba(220,38,38,0.8)" }}>{voucherError}</p>
+                      )}
+                      {voucherChecked && !voucherError && form.voucherCode && (
+                        <p className="text-xs mt-1.5" style={{ color:"rgba(74,222,128,0.8)" }}>
+                          ✓ Desconto de R${discountAmount.toLocaleString("pt-BR",{minimumFractionDigits:2})} aplicado
+                        </p>
+                      )}
                     </div>
-                    {voucherError && (
-                      <p className="text-xs mt-1.5" style={{ color:"rgba(220,38,38,0.8)" }}>{voucherError}</p>
-                    )}
-                    {voucherChecked && !voucherError && form.voucherCode && (
-                      <p className="text-xs mt-1.5" style={{ color:"rgba(74,222,128,0.8)" }}>
-                        ✓ Desconto de R${discountAmount.toLocaleString("pt-BR",{minimumFractionDigits:2})} aplicado
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
