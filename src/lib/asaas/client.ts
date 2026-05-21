@@ -62,6 +62,11 @@ export async function getAsaasPayment(chargeId: string) {
   return res.data as { id: string; status: string };
 }
 
+// ── Estornar pagamento ────────────────────────────────────────────
+export async function refundAsaasPayment(chargeId: string): Promise<void> {
+  await asaas.post(`/payments/${chargeId}/refund`);
+}
+
 // ── Tokenizar cartão (sem cobrança) ──────────────────────────────
 export async function tokenizeAsaasCard(data: {
   customer: string;

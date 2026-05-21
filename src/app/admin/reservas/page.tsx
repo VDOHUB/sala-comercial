@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 type Booking = {
   id: string; startAt: string; endAt: string; totalAmount: number;
   discountAmount: number; status: string; paidAt: string | null;
-  asaasPaymentUrl: string | null;
+  asaasPaymentUrl: string | null; asaasChargeId: string | null;
   client: { name: string; email: string; phone: string | null };
   voucher: { code: string } | null;
 };
@@ -23,7 +23,8 @@ const STATUS = {
 export default function ReservasPage() {
   const [data, setData]       = useState<{ bookings: Booking[]; total: number } | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleting,  setDeleting]  = useState<string | null>(null);
+  const [refunding, setRefunding] = useState<string | null>(null);
 
   function load() {
     const url = `/api/admin/reservas${statusFilter ? `?status=${statusFilter}` : ""}`;
@@ -37,6 +38,17 @@ export default function ReservasPage() {
     setDeleting(id);
     await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" });
     setDeleting(null);
+    load();
+  }
+
+  async function handleRefund(id: string, clientName: string, amount: number) {
+    const label = amount > 0 ? `R$ ${amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "gratuita";
+    if (!confirm(`Estornar reserva de ${clientName} (${label})?\n\nO valor será devolvido ao cartão do cliente em até 7 dias úteis. Esta ação não pode ser desfeita.`)) return;
+    setRefunding(id);
+    const res  = await fetch(`/api/admin/reservas/${id}/estorno`, { method: "POST" });
+    const json = await res.json();
+    setRefunding(null);
+    if (!res.ok) { alert(`Erro ao estornar: ${json.error}`); return; }
     load();
   }
 
@@ -146,6 +158,18 @@ export default function ReservasPage() {
                           <option key={v} value={v}>{st.label}</option>
                         ))}
                       </select>
+
+                      {/* Estornar — visível para PAID e ACTIVE com cobrança (ou gratuitas) */}
+                      {(b.status === "PAID" || b.status === "ACTIVE") && (
+                        <button
+                          onClick={() => handleRefund(b.id, b.client.name, b.totalAmount)}
+                          disabled={refunding === b.id}
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40"
+                          style={{ background: "rgba(124,58,237,0.08)", color: "#5b21b6", border: "1px solid rgba(124,58,237,0.15)" }}
+                        >
+                          {refunding === b.id ? "Estornando..." : "Estornar"}
+                        </button>
+                      )}
 
                       {/* Excluir */}
                       <button
