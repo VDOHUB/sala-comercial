@@ -76,6 +76,7 @@ export async function tokenizeAsaasCard(data: {
     cpfCnpj: string;
     phone?: string;
     postalCode?: string;
+    addressNumber?: string;
   };
 }): Promise<{ creditCardToken: string; creditCardBrand: string; creditCardNumber: string }> {
   const res = await asaas.post("/creditCard/tokenize", {

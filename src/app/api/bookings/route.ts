@@ -14,12 +14,13 @@ const PLANS: Record<string, { label: string; price: number; credits: number; val
 };
 
 const cardSchema = z.object({
-  holderName:  z.string().min(2),
-  number:      z.string().min(13),
-  expiryMonth: z.string().length(2),
-  expiryYear:  z.string().min(4),
-  ccv:         z.string().min(3),
-  postalCode:  z.string().min(8).max(8).optional(),
+  holderName:    z.string().min(2),
+  number:        z.string().min(13),
+  expiryMonth:   z.string().length(2),
+  expiryYear:    z.string().min(4),
+  ccv:           z.string().min(3),
+  postalCode:    z.string().min(8).max(8).optional(),
+  addressNumber: z.string().optional(),
 });
 
 const schema = z.object({
@@ -136,11 +137,12 @@ export async function POST(req: NextRequest) {
       ccv:         data.card.ccv,
     };
     const holderInfo = {
-      name:        client.name,
-      email:       client.email,
-      cpfCnpj:    client.cpf ?? "00000000000",
-      phone:       client.phone ?? undefined,
-      postalCode:  data.card.postalCode ?? undefined,
+      name:          client.name,
+      email:         client.email,
+      cpfCnpj:      client.cpf ?? "00000000000",
+      phone:         client.phone ?? undefined,
+      postalCode:    data.card.postalCode ?? undefined,
+      addressNumber: data.card.addressNumber ?? undefined,
     };
 
     if (totalAmount > 0) {
