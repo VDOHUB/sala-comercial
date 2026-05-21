@@ -53,6 +53,7 @@ export async function createAsaasCharge(data: {
     invoiceUrl: string;
     pixQrCodeUrl?: string;
     status: string;
+    creditCardToken?: string;
   };
 }
 

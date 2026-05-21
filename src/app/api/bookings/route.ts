@@ -166,6 +166,14 @@ export async function POST(req: NextRequest) {
       });
       chargeId   = charge.id;
       paymentUrl = charge.invoiceUrl;
+
+      // Salvar token do cartão para cobranças futuras (ex: frigobar)
+      if (charge.creditCardToken) {
+        await prisma.client.update({
+          where: { id: client.id },
+          data:  { asaasCardToken: charge.creditCardToken },
+        });
+      }
     } else {
       // Valor zero (cupom 100%) — apenas tokenizar o cartão para cobranças futuras
       const tokenResult = await tokenizeAsaasCard({
