@@ -232,7 +232,8 @@ export async function POST(req: NextRequest) {
       voucherId,
       asaasChargeId:   chargeId,
       asaasPaymentUrl: paymentUrl,
-      status:          totalAmount === 0 ? "PAID" : "PAID",
+      status:          "PAID",
+      paidAt:          new Date(),
     },
   });
 

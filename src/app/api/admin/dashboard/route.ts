@@ -12,8 +12,10 @@ export async function GET() {
   const mesAntes = { gte: startOfMonth(subMonths(now, 1)), lte: endOfMonth(subMonths(now, 1)) };
 
   const [
-    receitaMes,
-    receitaMesAnterior,
+    receitaBookingMes,
+    receitaSubMes,
+    receitaBookingMesAnterior,
+    receitaSubMesAnterior,
     reservasMes,
     reservasMesAnterior,
     totalClientes,
@@ -22,14 +24,30 @@ export async function GET() {
     reservasPorStatus,
     receitaUltimos6Meses,
   ] = await Promise.all([
-    // Receita mês atual (pagas)
+    // Receita mês atual — bookings (usa paidAt ou createdAt como fallback)
     prisma.booking.aggregate({
-      where: { status: { in: ["PAID", "ACTIVE", "COMPLETED"] }, paidAt: mesAtual },
+      where: {
+        status: { in: ["PAID", "ACTIVE", "COMPLETED"] },
+        OR: [{ paidAt: mesAtual }, { paidAt: null, createdAt: mesAtual }],
+      },
       _sum: { totalAmount: true },
     }),
-    // Receita mês anterior
+    // Receita mês atual — assinaturas
+    prisma.subscription.aggregate({
+      where: { status: { in: ["ACTIVE", "EXPIRED"] }, createdAt: mesAtual },
+      _sum: { totalAmount: true },
+    }),
+    // Receita mês anterior — bookings
     prisma.booking.aggregate({
-      where: { status: { in: ["PAID", "ACTIVE", "COMPLETED"] }, paidAt: mesAntes },
+      where: {
+        status: { in: ["PAID", "ACTIVE", "COMPLETED"] },
+        OR: [{ paidAt: mesAntes }, { paidAt: null, createdAt: mesAntes }],
+      },
+      _sum: { totalAmount: true },
+    }),
+    // Receita mês anterior — assinaturas
+    prisma.subscription.aggregate({
+      where: { status: { in: ["ACTIVE", "EXPIRED"] }, createdAt: mesAntes },
       _sum: { totalAmount: true },
     }),
     // Reservas mês atual
@@ -49,26 +67,33 @@ export async function GET() {
     }),
     // Reservas por status
     prisma.booking.groupBy({ by: ["status"], _count: true }),
-    // Receita últimos 6 meses
+    // Receita últimos 6 meses (bookings + assinaturas)
     Promise.all(
       Array.from({ length: 6 }, (_, i) => {
-        const mes = subMonths(now, i);
-        return prisma.booking.aggregate({
-          where: {
-            status: { in: ["PAID", "ACTIVE", "COMPLETED"] },
-            paidAt: { gte: startOfMonth(mes), lte: endOfMonth(mes) },
-          },
-          _sum: { totalAmount: true },
-        }).then((r: { _sum: { totalAmount: number | null } }) => ({
-          mes: mes.toISOString().slice(0, 7),
-          receita: r._sum.totalAmount ?? 0,
+        const mes    = subMonths(now, i);
+        const period = { gte: startOfMonth(mes), lte: endOfMonth(mes) };
+        return Promise.all([
+          prisma.booking.aggregate({
+            where: {
+              status: { in: ["PAID", "ACTIVE", "COMPLETED"] },
+              OR: [{ paidAt: period }, { paidAt: null, createdAt: period }],
+            },
+            _sum: { totalAmount: true },
+          }),
+          prisma.subscription.aggregate({
+            where: { status: { in: ["ACTIVE", "EXPIRED"] }, createdAt: period },
+            _sum: { totalAmount: true },
+          }),
+        ]).then(([b, s]) => ({
+          mes:     mes.toISOString().slice(0, 7),
+          receita: (b._sum.totalAmount ?? 0) + (s._sum.totalAmount ?? 0),
         }));
       })
     ),
   ]);
 
-  const receitaAtual   = receitaMes._sum.totalAmount ?? 0;
-  const receitaAnterior = receitaMesAnterior._sum.totalAmount ?? 0;
+  const receitaAtual    = (receitaBookingMes._sum.totalAmount ?? 0) + (receitaSubMes._sum.totalAmount ?? 0);
+  const receitaAnterior = (receitaBookingMesAnterior._sum.totalAmount ?? 0) + (receitaSubMesAnterior._sum.totalAmount ?? 0);
   const variacaoReceita = receitaAnterior > 0
     ? ((receitaAtual - receitaAnterior) / receitaAnterior) * 100
     : 0;
