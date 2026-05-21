@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         value:       totalAmount,
         dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
         description: isMultiPeriod
-          ? `${plan.label} — ${plan.credits} períodos`
+          ? plan.label
           : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
         installmentCount: installments,
         installmentValue: installments ? Math.ceil((totalAmount / installments) * 100) / 100 : undefined,
@@ -180,11 +180,10 @@ export async function POST(req: NextRequest) {
       console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
     }
   } catch (err: unknown) {
-    console.error("[bookings] ASAAS error:", err);
-    const msg =
-      (err as { response?: { data?: { errors?: { description: string }[] } } })
-        ?.response?.data?.errors?.[0]?.description ??
-      "Cartão recusado. Verifique os dados e tente novamente.";
+    const asaasErrors = (err as { response?: { data?: { errors?: { code: string; description: string }[] } } })
+      ?.response?.data?.errors;
+    console.error("[bookings] ASAAS error details:", JSON.stringify(asaasErrors ?? err));
+    const msg = asaasErrors?.[0]?.description ?? "Cartão recusado. Verifique os dados e tente novamente.";
     return NextResponse.json({ error: msg }, { status: 402 });
   }
 
