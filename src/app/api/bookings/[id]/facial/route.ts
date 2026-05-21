@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendBookingConfirmation, sendSubscriptionConfirmation } from "@/lib/resend/emails";
+import { sendBookingConfirmation, sendSubscriptionConfirmation, sendFacePhotoRetryEmail } from "@/lib/resend/emails";
 import {
   loginControlId,
   createControlIdUser,
@@ -75,7 +75,16 @@ export async function PATCH(
     });
 
     // Registrar no iDFace (não bloqueia se falhar)
-    await registerFaceOnDevice(subscription.client, photoBase64);
+    const faceUserId = await registerFaceOnDevice(subscription.client, photoBase64);
+    if (!faceUserId) {
+      const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
+      const retryUrl = `${baseUrl}/refazer-foto/${id}?type=subscription`;
+      sendFacePhotoRetryEmail({
+        to:         subscription.client.email,
+        clientName: subscription.client.name,
+        retryUrl,
+      }).catch((e) => console.warn("[facial/subscription] retry email error:", e));
+    }
 
     try {
       await sendSubscriptionConfirmation({
@@ -106,7 +115,16 @@ export async function PATCH(
   });
 
   // Registrar no iDFace (não bloqueia se falhar)
-  await registerFaceOnDevice(booking.client, photoBase64);
+  const faceUserId2 = await registerFaceOnDevice(booking.client, photoBase64);
+  if (!faceUserId2) {
+    const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
+    const retryUrl = `${baseUrl}/refazer-foto/${id}`;
+    sendFacePhotoRetryEmail({
+      to:         booking.client.email,
+      clientName: booking.client.name,
+      retryUrl,
+    }).catch((e) => console.warn("[facial/booking] retry email error:", e));
+  }
 
   // Agendar liberação e revogação de acesso via QStash
   try {

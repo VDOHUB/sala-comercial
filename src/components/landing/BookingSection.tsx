@@ -229,13 +229,12 @@ export function BookingSection() {
     if (!isMultiPeriod && (!selectedDate || !period)) return;
     setLoading(true); setError("");
 
-    const isFree = (finalAmount ?? plan.price) === 0;
     const body: Record<string, unknown> = {
       ...form,
       planKey:          selectedPlan,
       voucherCode:      form.voucherCode || undefined,
       installmentCount: installmentCount > 1 ? installmentCount : undefined,
-      card:             isFree ? undefined : card,
+      card,
     };
 
     if (!isMultiPeriod && selectedDate && period) {
@@ -628,21 +627,22 @@ export function BookingSection() {
                   </div>
                 </div>
 
-                {isFree ? (
-                  /* Reserva gratuita — não precisa de cartão */
-                  <div className="rounded-2xl p-5 mb-6 text-center"
+                {isFree && (
+                  <div className="rounded-xl p-3 mb-4"
                     style={{ background:"rgba(74,222,128,0.05)", border:"1px solid rgba(74,222,128,0.15)" }}>
-                    <p className="text-sm font-semibold" style={{ color:"rgba(74,222,128,0.9)" }}>
-                      ✓ Reserva 100% gratuita com cupom
+                    <p className="text-xs font-semibold" style={{ color:"rgba(74,222,128,0.8)" }}>
+                      ✓ Cupom aplicado — sem cobrança agora
                     </p>
-                    <p className="text-xs mt-1" style={{ color:"rgba(215,203,181,0.4)" }}>
-                      Nenhuma cobrança será realizada.
+                    <p className="text-xs mt-0.5" style={{ color:"rgba(215,203,181,0.4)" }}>
+                      O cartão é necessário para eventuais cobranças de itens consumíveis (frigobar, café).
                     </p>
                   </div>
-                ) : (
-                  /* Formulário de cartão */
-                  <div className="space-y-4 mb-6">
-                    {/* Parcelamento */}
+                )}
+
+                {/* Formulário de cartão — sempre obrigatório */}
+                <div className="space-y-4 mb-6">
+                  {/* Parcelamento (visível apenas quando valor > 0) */}
+                  {!isFree && (
                     <div>
                       <label className="block text-xs font-semibold tracking-wider uppercase mb-2"
                         style={{ color: "rgba(215,203,181,0.3)" }}>Parcelamento</label>
@@ -675,26 +675,26 @@ export function BookingSection() {
                         Sem juros em todas as parcelas
                       </p>
                     </div>
+                  )}
 
-                    <InputField label="Nome no cartão" required value={card.holderName}
-                      onChange={(e) => setCard({...card, holderName: e.target.value})}
-                      placeholder="Como está no cartão" />
-                    <InputField label="Número do cartão" required value={card.number}
-                      onChange={(e) => setCard({...card, number: formatCardNumber(e.target.value)})}
-                      placeholder="0000 0000 0000 0000" maxLength={19} inputMode="numeric" />
-                    <div className="grid grid-cols-3 gap-4">
-                      <InputField label="Mês" required value={card.expiryMonth}
-                        onChange={(e) => setCard({...card, expiryMonth: e.target.value.replace(/\D/g,"").slice(0,2)})}
-                        placeholder="MM" maxLength={2} inputMode="numeric" />
-                      <InputField label="Ano" required value={card.expiryYear}
-                        onChange={(e) => setCard({...card, expiryYear: e.target.value.replace(/\D/g,"").slice(0,4)})}
-                        placeholder="AAAA" maxLength={4} inputMode="numeric" />
-                      <InputField label="CVV" required value={card.ccv}
-                        onChange={(e) => setCard({...card, ccv: e.target.value.replace(/\D/g,"").slice(0,4)})}
-                        placeholder="123" maxLength={4} inputMode="numeric" />
-                    </div>
+                  <InputField label="Nome no cartão" required value={card.holderName}
+                    onChange={(e) => setCard({...card, holderName: e.target.value})}
+                    placeholder="Como está no cartão" />
+                  <InputField label="Número do cartão" required value={card.number}
+                    onChange={(e) => setCard({...card, number: formatCardNumber(e.target.value)})}
+                    placeholder="0000 0000 0000 0000" maxLength={19} inputMode="numeric" />
+                  <div className="grid grid-cols-3 gap-4">
+                    <InputField label="Mês" required value={card.expiryMonth}
+                      onChange={(e) => setCard({...card, expiryMonth: e.target.value.replace(/\D/g,"").slice(0,2)})}
+                      placeholder="MM" maxLength={2} inputMode="numeric" />
+                    <InputField label="Ano" required value={card.expiryYear}
+                      onChange={(e) => setCard({...card, expiryYear: e.target.value.replace(/\D/g,"").slice(0,4)})}
+                      placeholder="AAAA" maxLength={4} inputMode="numeric" />
+                    <InputField label="CVV" required value={card.ccv}
+                      onChange={(e) => setCard({...card, ccv: e.target.value.replace(/\D/g,"").slice(0,4)})}
+                      placeholder="123" maxLength={4} inputMode="numeric" />
                   </div>
-                )}
+                </div>
 
                 {/* Termos de uso */}
                 <div className="flex items-start gap-3 mb-5 mt-2">
@@ -747,7 +747,7 @@ export function BookingSection() {
                     }}
                     whileHover={termsAccepted ? { scale:1.02, boxShadow:"0 0 30px rgba(215,203,181,0.2)" } : {}}
                     whileTap={{ scale:0.98 }}>
-                    {loading ? "Processando..." : isFree ? "Confirmar reserva" : "Pagar e continuar"}
+                    {loading ? "Processando..." : isFree ? "Cadastrar cartão e continuar" : "Pagar e continuar"}
                   </motion.button>
                 </div>
               </motion.form>

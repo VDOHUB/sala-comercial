@@ -22,7 +22,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
 
 type Client = {
   id: string; name: string; email: string; phone: string | null; cpf: string | null;
-  createdAt: string; _count: { bookings: number };
+  facePhoto: string | null; createdAt: string; _count: { bookings: number };
 };
 
 type ClientDetail = Client & {
@@ -121,10 +121,19 @@ export default function ClientesPage() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                          style={{ background: "rgba(26,14,5,0.08)", color: "#1a0e05" }}>
-                          {c.name.charAt(0).toUpperCase()}
-                        </div>
+                        {c.facePhoto ? (
+                          <img
+                            src={c.facePhoto}
+                            alt={c.name}
+                            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                            style={{ border: "1px solid rgba(26,14,5,0.1)" }}
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                            style={{ background: "rgba(26,14,5,0.08)", color: "#1a0e05" }}>
+                            {c.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium text-sm" style={{ color: "#1a0e05" }}>{c.name}</p>
                           {c.cpf && !selected && <p className="text-xs" style={{ color: "rgba(26,14,5,0.38)" }}>CPF: {c.cpf}</p>}
@@ -176,6 +185,34 @@ export default function ClientesPage() {
             </div>
           ) : selected && (
             <div className="p-5 space-y-5">
+              {/* Foto facial */}
+              {selected.facePhoto ? (
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <img
+                      src={selected.facePhoto}
+                      alt={selected.name}
+                      className="w-24 h-24 rounded-2xl object-cover"
+                      style={{ border: "1px solid rgba(26,14,5,0.1)" }}
+                    />
+                    <span className="absolute -bottom-1.5 -right-1.5 text-xs px-1.5 py-0.5 rounded-full font-semibold"
+                      style={{ background: "rgba(22,163,74,0.1)", color: "#166534", border: "1px solid rgba(22,163,74,0.2)" }}>
+                      ✓ Facial
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="w-24 h-24 rounded-2xl flex flex-col items-center justify-center gap-1"
+                    style={{ background: "rgba(26,14,5,0.05)", border: "1px dashed rgba(26,14,5,0.15)" }}>
+                    <span className="text-2xl font-bold" style={{ color: "rgba(26,14,5,0.2)" }}>
+                      {selected.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="text-xs" style={{ color: "rgba(26,14,5,0.3)" }}>Sem foto</span>
+                  </div>
+                </div>
+              )}
+
               {/* Info básica */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">

@@ -188,6 +188,56 @@ export async function sendReminder(data: {
   });
 }
 
+// ── Alerta de falha no cadastro facial ───────────────────────────
+export async function sendFacePhotoRetryEmail(data: {
+  to: string;
+  clientName: string;
+  retryUrl: string;
+}) {
+  const content = `
+    <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
+      Atenção: foto não reconhecida ⚠️
+    </h2>
+    <p style="margin:0 0 16px;font-size:14px;color:rgba(26,14,5,0.5);">
+      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>!
+    </p>
+    <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.65);">
+      Não conseguimos validar sua foto no sistema de acesso facial.
+      Para garantir sua entrada na sala, precisamos que você tire uma nova foto seguindo as instruções abaixo:
+    </p>
+
+    <div style="background:rgba(26,14,5,0.04);border-radius:12px;padding:16px;border:1px solid rgba(26,14,5,0.07);margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#1a0e05;">📋 Dicas para uma boa foto:</p>
+      <ul style="margin:0;padding-left:20px;font-size:13px;color:rgba(26,14,5,0.6);line-height:1.8;">
+        <li>Olhe diretamente para a câmera</li>
+        <li>Mantenha o rosto centralizado e bem iluminado</li>
+        <li>Não use óculos escuros ou chapéu</li>
+        <li>Evite ambientes muito escuros ou com luz atrás de você</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:8px;">
+      <a href="${data.retryUrl}"
+        style="display:block;text-align:center;background:#1a0e05;color:#f5f0e8;
+        padding:14px 24px;border-radius:12px;font-size:14px;font-weight:700;
+        text-decoration:none;">
+        Refazer cadastro facial →
+      </a>
+    </div>
+
+    <p style="margin:16px 0 0;font-size:11px;color:rgba(26,14,5,0.3);text-align:center;">
+      Este link é pessoal. Não compartilhe com terceiros.
+    </p>
+  `;
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      data.to,
+    subject: "VDO HUB — Atualize seu cadastro facial",
+    html:    emailWrapper(content),
+  });
+}
+
 // ── Confirmação de assinatura (planos multi-período) ──────────────
 export async function sendSubscriptionConfirmation(data: {
   to: string;

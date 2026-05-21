@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createAsaasCustomer, createAsaasCharge } from "@/lib/asaas/client";
+import { createAsaasCustomer, createAsaasCharge, tokenizeAsaasCard } from "@/lib/asaas/client";
 import { sendBookingConfirmation, sendSubscriptionConfirmation } from "@/lib/resend/emails";
 import { z } from "zod";
 import { format, addDays, addMonths } from "date-fns";
@@ -101,24 +101,50 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Processar pagamento ASAAS (se valor > 0) ──────────────────────
+  // ── Processar pagamento / tokenização ASAAS (cartão sempre obrigatório) ──
+  if (!data.card) {
+    return NextResponse.json({ error: "Dados do cartão obrigatórios." }, { status: 400 });
+  }
+
   let chargeId: string | null = null;
   let paymentUrl: string | null = null;
 
-  if (totalAmount > 0) {
-    if (!data.card) {
-      return NextResponse.json({ error: "Dados do cartão obrigatórios." }, { status: 400 });
-    }
-    try {
+  try {
+    // Criar (ou reusar) cliente no ASAAS
+    let asaasCustomerId = client.asaasCustomerId;
+    if (!asaasCustomerId) {
       const asaasCustomer = await createAsaasCustomer({
         name:     client.name,
         email:    client.email,
         cpfCnpj: client.cpf ?? undefined,
         phone:    client.phone ?? undefined,
       });
+      asaasCustomerId = asaasCustomer.id;
+      await prisma.client.update({
+        where: { id: client.id },
+        data:  { asaasCustomerId },
+      });
+      client = { ...client, asaasCustomerId };
+    }
+
+    const cardData = {
+      holderName:  data.card.holderName,
+      number:      data.card.number.replace(/\s/g, ""),
+      expiryMonth: data.card.expiryMonth,
+      expiryYear:  data.card.expiryYear,
+      ccv:         data.card.ccv,
+    };
+    const holderInfo = {
+      name:     client.name,
+      email:    client.email,
+      cpfCnpj: client.cpf ?? "00000000000",
+      phone:    client.phone ?? undefined,
+    };
+
+    if (totalAmount > 0) {
       const installments = (data.installmentCount ?? 1) > 1 ? data.installmentCount : undefined;
       const charge = await createAsaasCharge({
-        customer:    asaasCustomer.id,
+        customer:    asaasCustomerId,
         billingType: "CREDIT_CARD",
         value:       totalAmount,
         dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
@@ -127,30 +153,31 @@ export async function POST(req: NextRequest) {
           : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
         installmentCount: installments,
         installmentValue: installments ? Math.ceil((totalAmount / installments) * 100) / 100 : undefined,
-        creditCard: {
-          holderName:  data.card.holderName,
-          number:      data.card.number.replace(/\s/g, ""),
-          expiryMonth: data.card.expiryMonth,
-          expiryYear:  data.card.expiryYear,
-          ccv:         data.card.ccv,
-        },
-        creditCardHolderInfo: {
-          name:     client.name,
-          email:    client.email,
-          cpfCnpj: client.cpf ?? "00000000000",
-          phone:    client.phone ?? undefined,
-        },
+        creditCard:           cardData,
+        creditCardHolderInfo: holderInfo,
       });
       chargeId   = charge.id;
       paymentUrl = charge.invoiceUrl;
-    } catch (err: unknown) {
-      console.error("[bookings] ASAAS error:", err);
-      const msg =
-        (err as { response?: { data?: { errors?: { description: string }[] } } })
-          ?.response?.data?.errors?.[0]?.description ??
-        "Pagamento recusado. Verifique os dados do cartão.";
-      return NextResponse.json({ error: msg }, { status: 402 });
+    } else {
+      // Valor zero (cupom 100%) — apenas tokenizar o cartão para cobranças futuras
+      const tokenResult = await tokenizeAsaasCard({
+        customer:             asaasCustomerId,
+        creditCard:           cardData,
+        creditCardHolderInfo: holderInfo,
+      });
+      await prisma.client.update({
+        where: { id: client.id },
+        data:  { asaasCardToken: tokenResult.creditCardToken },
+      });
+      console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
     }
+  } catch (err: unknown) {
+    console.error("[bookings] ASAAS error:", err);
+    const msg =
+      (err as { response?: { data?: { errors?: { description: string }[] } } })
+        ?.response?.data?.errors?.[0]?.description ??
+      "Cartão recusado. Verifique os dados e tente novamente.";
+    return NextResponse.json({ error: msg }, { status: 402 });
   }
 
   // ── FLUXO MULTI-PERÍODO: cria Subscription ───────────────────────
