@@ -106,7 +106,8 @@ export function BookingSection() {
   const [voucherError, setVoucherError]     = useState("");
 
   // Cartão
-  const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "", addressNumber: "" });
+  const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "", addressNumber: "", addressComplement: "", address: "" });
+  const [cepLoading, setCepLoading] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(1);
 
   // Resultado da criação
@@ -302,6 +303,24 @@ export function BookingSection() {
   // ── Utilitários de cartão ─────────────────────────────────────────
   function formatCardNumber(v: string) {
     return v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
+  }
+
+  async function lookupCep(cep: string) {
+    const digits = cep.replace(/\D/g, "");
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res  = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setCard((prev) => ({
+          ...prev,
+          address: [data.logradouro, data.bairro, data.localidade, data.uf].filter(Boolean).join(", "),
+        }));
+      }
+    } catch { /* silencioso */ } finally {
+      setCepLoading(false);
+    }
   }
 
   const total    = finalAmount ?? plan.price;
@@ -694,13 +713,46 @@ export function BookingSection() {
                       onChange={(e) => setCard({...card, ccv: e.target.value.replace(/\D/g,"").slice(0,4)})}
                       placeholder="123" maxLength={4} inputMode="numeric" />
                   </div>
+                  {/* Endereço do titular */}
+                  <div>
+                    <label className="block text-xs font-semibold tracking-wider uppercase mb-2"
+                      style={{ color: "rgba(215,203,181,0.3)" }}>CEP do titular</label>
+                    <div className="relative">
+                      <input
+                        value={card.postalCode}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g,"").slice(0,8);
+                          setCard({...card, postalCode: v, address: v.length < 8 ? "" : card.address});
+                          if (v.length === 8) lookupCep(v);
+                        }}
+                        placeholder="00000-000"
+                        maxLength={9}
+                        inputMode="numeric"
+                        required
+                        className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all pr-10"
+                        style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(215,203,181,0.08)", color:"#d7cbb5" }}
+                        onFocus={(e) => e.currentTarget.style.borderColor="rgba(215,203,181,0.2)"}
+                        onBlur={(e)  => e.currentTarget.style.borderColor="rgba(215,203,181,0.08)"}
+                      />
+                      {cepLoading && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs"
+                          style={{ color:"rgba(215,203,181,0.4)" }}>⟳</span>
+                      )}
+                    </div>
+                  </div>
+                  {card.address && (
+                    <div className="rounded-xl px-4 py-2.5 text-xs"
+                      style={{ background:"rgba(215,203,181,0.04)", border:"1px solid rgba(215,203,181,0.08)", color:"rgba(215,203,181,0.6)" }}>
+                      📍 {card.address}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
-                    <InputField label="CEP do titular" required value={card.postalCode}
-                      onChange={(e) => setCard({...card, postalCode: e.target.value.replace(/\D/g,"").slice(0,8)})}
-                      placeholder="00000000" maxLength={8} inputMode="numeric" />
                     <InputField label="Número" required value={card.addressNumber}
                       onChange={(e) => setCard({...card, addressNumber: e.target.value.slice(0,10)})}
                       placeholder="Ex: 181" />
+                    <InputField label="Complemento" value={card.addressComplement}
+                      onChange={(e) => setCard({...card, addressComplement: e.target.value.slice(0,30)})}
+                      placeholder="Apto, sala..." />
                   </div>
                 </div>
 

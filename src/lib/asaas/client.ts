@@ -43,6 +43,8 @@ export async function createAsaasCharge(data: {
     phone?: string;
     postalCode?: string;
     addressNumber?: string;
+    addressComplement?: string;
+    address?: string;
   };
 }) {
   const res = await asaas.post("/payments", data);
@@ -77,6 +79,8 @@ export async function tokenizeAsaasCard(data: {
     phone?: string;
     postalCode?: string;
     addressNumber?: string;
+    addressComplement?: string;
+    address?: string;
   };
 }): Promise<{ creditCardToken: string; creditCardBrand: string; creditCardNumber: string }> {
   const res = await asaas.post("/creditCard/tokenize", {
