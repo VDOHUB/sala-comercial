@@ -83,12 +83,12 @@ export async function POST(req: NextRequest) {
     client = await prisma.client.update({ where: { id: client.id }, data: { cpf: data.cpf } });
   }
 
-  // Calcular valor e desconto (HUB ONE pode usar voucher)
+  // Calcular valor e desconto (voucher válido para qualquer plano)
   let totalAmount    = plan.price;
   let discountAmount = 0;
   let voucherId: string | undefined;
 
-  if (!isMultiPeriod && data.voucherCode) {
+  if (data.voucherCode) {
     const voucher = await prisma.voucher.findUnique({
       where: { code: data.voucherCode.toUpperCase() },
     });
