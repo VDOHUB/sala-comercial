@@ -12,7 +12,7 @@ const PLAN_LABELS: Record<string, string> = {
 type Subscription = {
   id: string; planKey: string; totalCredits: number; usedCredits: number;
   status: string; expiresAt: string; totalAmount: number; token: string;
-  createdAt: string;
+  asaasChargeId: string | null; createdAt: string;
   client: { name: string; email: string; phone: string | null };
   _count: { bookings: number };
 };
@@ -24,12 +24,31 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
 };
 
 export default function AssinaturasPage() {
-  const [subs, setSubs]       = useState<Subscription[] | null>(null);
-  const [filter, setFilter]   = useState("");
+  const [subs, setSubs]         = useState<Subscription[] | null>(null);
+  const [filter, setFilter]     = useState("");
+  const [refunding, setRefunding] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     fetch("/api/admin/assinaturas").then((r) => r.json()).then(setSubs);
-  }, []);
+  }
+
+  async function handleRefund(sub: Subscription) {
+    const label = sub.totalAmount > 0
+      ? `R$ ${sub.totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+      : "gratuita";
+    const periodos = sub.usedCredits > 0
+      ? `\n\nAtenção: ${sub.usedCredits} período(s) já foram utilizados.`
+      : "";
+    if (!confirm(`Estornar assinatura de ${sub.client.name} (${label})?${periodos}\n\nA assinatura será cancelada e o valor devolvido ao cartão em até 7 dias úteis.`)) return;
+    setRefunding(sub.id);
+    const res  = await fetch(`/api/admin/assinaturas/${sub.id}/estorno`, { method: "POST" });
+    const json = await res.json();
+    setRefunding(null);
+    if (!res.ok) { alert(`Erro ao estornar: ${json.error}`); return; }
+    load();
+  }
+
+  useEffect(() => { load(); }, []); // eslint-disable-line
 
   const filtered = subs?.filter((s) =>
     !filter || s.status === filter
@@ -113,15 +132,27 @@ export default function AssinaturasPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
                   <p className="text-xs" style={{ color: "rgba(26,14,5,0.38)" }}>
                     Expira em {format(new Date(s.expiresAt), "dd/MM/yyyy", { locale: ptBR })}
                   </p>
-                  <a href={portalUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-xs font-semibold hover:underline"
-                    style={{ color: "rgba(26,14,5,0.5)" }}>
-                    Abrir portal do cliente →
-                  </a>
+                  <div className="flex items-center gap-3">
+                    {s.status === "ACTIVE" && (
+                      <button
+                        onClick={() => handleRefund(s)}
+                        disabled={refunding === s.id}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-40 transition-colors"
+                        style={{ background: "rgba(124,58,237,0.08)", color: "#5b21b6", border: "1px solid rgba(124,58,237,0.15)" }}
+                      >
+                        {refunding === s.id ? "Estornando..." : "Estornar"}
+                      </button>
+                    )}
+                    <a href={portalUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-semibold hover:underline"
+                      style={{ color: "rgba(26,14,5,0.5)" }}>
+                      Abrir portal do cliente →
+                    </a>
+                  </div>
                 </div>
               </div>
             );
