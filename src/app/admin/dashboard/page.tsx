@@ -14,7 +14,7 @@ type DashData = {
     client: { name: string; email: string };
   }>;
   receitaUltimos6Meses: Array<{ mes: string; receita: number }>;
-  lowStockItems: Array<{ id: string; name: string; stock: number; minStock: number; photo: string | null }>;
+  lowStockItems: Array<{ id: string; name: string; stockFrigobar: number; stockDeposito: number; minStock: number; photo: string | null }>;
   consumableSalesMes: { revenue: number; qty: number };
 };
 
@@ -94,8 +94,9 @@ export default function DashboardPage() {
                 )}
                 <span className="text-xs font-semibold" style={{ color: "#9a3412" }}>{item.name}</span>
                 <span className="text-xs font-bold px-1.5 py-0.5 rounded-lg"
-                  style={{ background: item.stock === 0 ? "rgba(220,38,38,0.15)" : "rgba(234,88,12,0.15)", color: item.stock === 0 ? "#991b1b" : "#9a3412" }}>
-                  {item.stock === 0 ? "Zerado" : `${item.stock} un.`}
+                  style={{ background: item.stockFrigobar === 0 ? "rgba(220,38,38,0.15)" : "rgba(234,88,12,0.15)", color: item.stockFrigobar === 0 ? "#991b1b" : "#9a3412" }}>
+                  {item.stockFrigobar === 0 ? "Zerado" : `${item.stockFrigobar} no frigobar`}
+                  {item.stockDeposito > 0 && ` · ${item.stockDeposito} depósito`}
                 </span>
               </div>
             ))}

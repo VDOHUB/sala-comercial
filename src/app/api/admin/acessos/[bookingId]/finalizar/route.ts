@@ -103,7 +103,7 @@ export async function POST(
           }),
           prisma.consumable.update({
             where: { id: c.id },
-            data:  { stock: { decrement: item.qty } },
+            data:  { stockFrigobar: { decrement: item.qty } },
           }),
         ]);
       })

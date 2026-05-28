@@ -26,12 +26,12 @@ export async function GET() {
     reservasPorStatus,
     receitaUltimos6Meses,
   ] = await Promise.all([
-    // Insumos com estoque baixo (stock <= minStock)
+    // Insumos com estoque baixo no frigobar (stockFrigobar <= minStock)
     prisma.consumable.findMany({
       where: { active: true },
-      select: { id: true, name: true, stock: true, minStock: true, photo: true },
-      orderBy: { stock: "asc" },
-    }).then((items) => items.filter((i) => i.stock <= i.minStock)),
+      select: { id: true, name: true, stockFrigobar: true, stockDeposito: true, minStock: true, photo: true },
+      orderBy: { stockFrigobar: "asc" },
+    }).then((items) => items.filter((i) => i.stockFrigobar <= i.minStock)),
     // Vendas de insumos no mês atual
     prisma.consumableSale.aggregate({
       where: { createdAt: mesAtual },

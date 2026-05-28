@@ -154,19 +154,22 @@ model Lead {
 
 // ── Insumos (frigobar, café, etc.) ───────────────────────────────
 model Consumable {
-  id          String   @id @default(cuid())
-  name        String
-  photo       String?  // base64 ou URL
-  price       Float    // preço de venda
-  costPrice   Float?   // preço de custo (para margem)
-  description String?
-  active      Boolean  @default(true)
-  stock       Int      @default(0)  // estoque atual
-  minStock    Int      @default(2)  // estoque mínimo para alerta
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  code           String?  // código do produto (P001, P002...)
+  name           String
+  unit           String?  // LATA, GARRAFA, SACHÊ, UN...
+  photo          String?  // base64 ou URL
+  price          Float    // preço de venda
+  costPrice      Float?   // preço de custo (para margem/ROI)
+  description    String?
+  active         Boolean  @default(true)
+  stockDeposito  Int      @default(0)  // estoque no depósito/reserva
+  stockFrigobar  Int      @default(0)  // estoque no frigobar (exposto)
+  minStock       Int      @default(2)  // mínimo no frigobar para alerta
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  sales       ConsumableSale[]
+  sales          ConsumableSale[]
 
   @@map("consumables")
 }
