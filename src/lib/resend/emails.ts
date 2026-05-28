@@ -188,6 +188,46 @@ export async function sendReminder(data: {
   });
 }
 
+// ── Aviso de fim de sessão (1h e 30min antes) ────────────────────
+export async function sendSessionEndingReminder(data: {
+  to: string;
+  clientName: string;
+  endAt: Date;
+  minutesLeft: number;
+}) {
+  const endTime = data.endAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", timeStyle: "short" });
+  const label   = data.minutesLeft >= 60 ? "1 hora" : "30 minutos";
+
+  const content = `
+    <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
+      Sua sessão termina em ${label} ⏱
+    </h2>
+    <p style="margin:0 0 20px;font-size:14px;color:rgba(26,14,5,0.5);">
+      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>!
+    </p>
+
+    <div style="background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);border-radius:12px;
+      padding:16px;text-align:center;margin-bottom:24px;">
+      <p style="margin:0;font-size:22px;font-weight:800;color:#92400e;">🕐 Encerramento às ${endTime}</p>
+      <p style="margin:6px 0 0;font-size:13px;color:rgba(26,14,5,0.5);">
+        Faltam aproximadamente <strong>${label}</strong> para o fim do seu período.
+      </p>
+    </div>
+
+    <p style="margin:0;font-size:13px;color:rgba(26,14,5,0.5);text-align:center;">
+      Por favor, organize seus pertences e finalize suas atividades com antecedência.<br>
+      Obrigado por usar o VDO HUB! 🙏
+    </p>
+  `;
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      data.to,
+    subject: `VDO HUB — Sua sessão termina em ${label}`,
+    html:    emailWrapper(content),
+  });
+}
+
 // ── Alerta de falha no cadastro facial ───────────────────────────
 export async function sendFacePhotoRetryEmail(data: {
   to: string;

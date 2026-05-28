@@ -110,6 +110,7 @@ model Subscription {
   totalAmount  Float
   asaasChargeId String?           @unique
   token        String             @unique @default(cuid()) // magic link
+  frozenReason String?            // motivo do congelamento
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -122,6 +123,7 @@ enum SubscriptionStatus {
   ACTIVE
   EXPIRED
   CANCELLED
+  FROZEN
 }
 
 // ── Log de Acessos ────────────────────────────────────────────────
@@ -147,6 +149,20 @@ model Lead {
   createdAt DateTime @default(now())
 
   @@map("leads")
+}
+
+// ── Insumos (frigobar, café, etc.) ───────────────────────────────
+model Consumable {
+  id          String   @id @default(cuid())
+  name        String
+  photo       String?  // base64 ou URL
+  price       Float
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("consumables")
 }
 
 // ── Configurações do sistema ──────────────────────────────────────

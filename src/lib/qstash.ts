@@ -26,3 +26,28 @@ export async function scheduleRevoke(bookingId: string, at: Date) {
     body:  { bookingId },
   });
 }
+
+// Agenda lembretes de fim de sessão (1h e 30min antes)
+export async function scheduleEndingReminders(bookingId: string, endAt: Date) {
+  const now = Date.now();
+
+  const delay60 = Math.floor((endAt.getTime() - 60 * 60 * 1000 - now) / 1000);
+  const delay30 = Math.floor((endAt.getTime() - 30 * 60 * 1000 - now) / 1000);
+
+  const promises = [];
+  if (delay60 > 30) { // só agenda se faltam mais de 30s
+    promises.push(qstash.publishJSON({
+      url:   `${BASE_URL}/api/notifications/session-ending`,
+      delay: delay60,
+      body:  { bookingId, minutesLeft: 60 },
+    }));
+  }
+  if (delay30 > 30) {
+    promises.push(qstash.publishJSON({
+      url:   `${BASE_URL}/api/notifications/session-ending`,
+      delay: delay30,
+      body:  { bookingId, minutesLeft: 30 },
+    }));
+  }
+  await Promise.allSettled(promises);
+}

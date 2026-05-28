@@ -10,6 +10,15 @@ type ClientOption = {
   facePhoto: string | null;
 };
 
+type Consumable = {
+  id: string;
+  name: string;
+  price: number;
+  photo: string | null;
+};
+
+type SelectedItem = { consumableId: string; qty: number };
+
 function InputField({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
     <div>
@@ -24,37 +33,22 @@ function InputField({ label, ...props }: React.InputHTMLAttributes<HTMLInputElem
   );
 }
 
-function TextareaField({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
-        style={{ color: "rgba(26,14,5,0.4)" }}>{label}</label>
-      <textarea
-        {...props}
-        rows={3}
-        className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none resize-none"
-        style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }}
-      />
-    </div>
-  );
-}
-
 export default function CobrancasPage() {
-  const [clients, setClients]     = useState<ClientOption[]>([]);
-  const [search, setSearch]       = useState("");
+  const [clients, setClients]       = useState<ClientOption[]>([]);
+  const [consumables, setConsumables] = useState<Consumable[]>([]);
+  const [search, setSearch]         = useState("");
   const [selectedId, setSelectedId] = useState<string>("");
-  const [amount, setAmount]       = useState("");
-  const [description, setDescription] = useState("");
-  const [card, setCard]           = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
-  const [needsCard, setNeedsCard] = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState<{ ok?: boolean; error?: string; invoiceUrl?: string } | null>(null);
-  const [history, setHistory]     = useState<Array<{ clientName: string; amount: number; description: string; chargeId: string; invoiceUrl: string; at: string }>>([]);
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [extraDesc, setExtraDesc]   = useState("");
+  const [card, setCard]             = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+  const [needsCard, setNeedsCard]   = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [result, setResult]         = useState<{ ok?: boolean; error?: string; invoiceUrl?: string } | null>(null);
+  const [history, setHistory]       = useState<Array<{ clientName: string; amount: number; description: string; invoiceUrl: string; at: string }>>([]);
 
   useEffect(() => {
-    fetch("/api/admin/cobrancas")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setClients(data); });
+    fetch("/api/admin/cobrancas").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setClients(data); });
+    fetch("/api/admin/insumos").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setConsumables(data); });
   }, []);
 
   const filtered = clients.filter((c) =>
@@ -64,23 +58,53 @@ export default function CobrancasPage() {
 
   const selectedClient = clients.find((c) => c.id === selectedId);
 
+  function setQty(consumableId: string, qty: number) {
+    if (qty <= 0) {
+      setSelectedItems((prev) => prev.filter((i) => i.consumableId !== consumableId));
+    } else {
+      setSelectedItems((prev) => {
+        const existing = prev.find((i) => i.consumableId === consumableId);
+        if (existing) return prev.map((i) => i.consumableId === consumableId ? { ...i, qty } : i);
+        return [...prev, { consumableId, qty }];
+      });
+    }
+  }
+
+  function getQty(consumableId: string) {
+    return selectedItems.find((i) => i.consumableId === consumableId)?.qty ?? 0;
+  }
+
+  function calcTotal() {
+    return selectedItems.reduce((sum, si) => {
+      const c = consumables.find((c) => c.id === si.consumableId);
+      return sum + (c ? c.price * si.qty : 0);
+    }, 0);
+  }
+
+  function buildDescription() {
+    const parts = selectedItems
+      .map((si) => {
+        const c = consumables.find((c) => c.id === si.consumableId);
+        if (!c) return null;
+        return `${si.qty}x ${c.name} (R$${(c.price * si.qty).toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`;
+      })
+      .filter(Boolean);
+    if (extraDesc) parts.push(extraDesc);
+    return parts.join(" + ") || "Cobrança manual";
+  }
+
   function formatCardNumber(v: string) {
     return v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedId || !amount || !description) return;
+    const amount = calcTotal();
+    if (!selectedId || amount <= 0) return;
     setLoading(true); setResult(null);
 
-    const amountNum = parseFloat(amount.replace(",", "."));
-    if (isNaN(amountNum) || amountNum <= 0) {
-      setResult({ error: "Valor inválido." });
-      setLoading(false);
-      return;
-    }
-
-    const body: Record<string, unknown> = { clientId: selectedId, amount: amountNum, description };
+    const description = buildDescription();
+    const body: Record<string, unknown> = { clientId: selectedId, amount, description };
     if (needsCard) body.card = { ...card, number: card.number.replace(/\s/g, "") };
 
     const res  = await fetch("/api/admin/cobrancas", {
@@ -103,19 +127,21 @@ export default function CobrancasPage() {
       setResult({ ok: true, invoiceUrl: data.invoiceUrl });
       setHistory((prev) => [{
         clientName:  selectedClient?.name ?? "",
-        amount:      amountNum,
+        amount,
         description,
-        chargeId:    data.chargeId,
         invoiceUrl:  data.invoiceUrl,
         at:          new Date().toLocaleString("pt-BR"),
       }, ...prev]);
-      setAmount("");
-      setDescription("");
+      setSelectedItems([]);
+      setExtraDesc("");
       setNeedsCard(false);
       setCard({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
     }
     setLoading(false);
   }
+
+  const total = calcTotal();
+  const canSubmit = selectedId && total > 0;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -204,25 +230,74 @@ export default function CobrancasPage() {
           )}
         </div>
 
-        {/* Valor */}
-        <InputField
-          label="Valor (R$)"
-          type="text"
-          inputMode="decimal"
-          placeholder="0,00"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
+        {/* Insumos */}
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2"
+            style={{ color: "rgba(26,14,5,0.4)" }}>Itens consumidos</label>
+          {consumables.length === 0 ? (
+            <p className="text-sm" style={{ color: "rgba(26,14,5,0.4)" }}>
+              Nenhum insumo cadastrado. <a href="/admin/insumos" className="underline">Cadastrar insumos</a>
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {consumables.map((c) => {
+                const qty = getQty(c.id);
+                return (
+                  <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors"
+                    style={{ background: qty > 0 ? "rgba(26,14,5,0.06)" : "#ede8df", border: "1px solid rgba(26,14,5,0.08)" }}>
+                    {c.photo ? (
+                      <img src={c.photo} alt={c.name} className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                        style={{ background: "rgba(26,14,5,0.06)" }}>🧃</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "#1a0e05" }}>{c.name}</p>
+                      <p className="text-xs" style={{ color: "rgba(26,14,5,0.4)" }}>
+                        R${c.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} cada
+                        {qty > 0 && ` · subtotal R$${(c.price * qty).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button type="button"
+                        onClick={() => setQty(c.id, qty - 1)}
+                        disabled={qty === 0}
+                        className="w-7 h-7 rounded-lg text-sm font-bold flex items-center justify-center disabled:opacity-30"
+                        style={{ background: "rgba(26,14,5,0.1)", color: "#1a0e05" }}>−</button>
+                      <span className="w-5 text-center text-sm font-semibold" style={{ color: "#1a0e05" }}>{qty}</span>
+                      <button type="button"
+                        onClick={() => setQty(c.id, qty + 1)}
+                        className="w-7 h-7 rounded-lg text-sm font-bold flex items-center justify-center"
+                        style={{ background: "rgba(26,14,5,0.1)", color: "#1a0e05" }}>+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-        {/* Descrição / observação */}
-        <TextareaField
-          label="Descrição / observação"
-          placeholder="Ex: Frigobar — 2x Coca-Cola (R$8,00 cada) + 1x água (R$4,00)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
+          {/* Observação extra */}
+          <div className="mt-3">
+            <input
+              value={extraDesc}
+              onChange={(e) => setExtraDesc(e.target.value)}
+              placeholder="Observação adicional (opcional)"
+              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+              style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }}
+            />
+          </div>
+        </div>
+
+        {/* Total */}
+        {total > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+            style={{ background: "rgba(26,14,5,0.04)", border: "1px solid rgba(26,14,5,0.08)" }}>
+            <span className="text-sm font-semibold" style={{ color: "rgba(26,14,5,0.5)" }}>Total</span>
+            <span className="text-lg font-bold" style={{ color: "#1a0e05" }}>
+              R${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+        )}
 
         {/* Dados de cartão (quando cliente não tem token salvo) */}
         {needsCard && (
@@ -274,16 +349,15 @@ export default function CobrancasPage() {
 
         <button
           type="submit"
-          disabled={loading || !selectedId || !amount || !description}
-          className="w-full py-3.5 rounded-xl text-sm font-bold transition-all"
-          style={{
-            background: (!selectedId || !amount || !description) ? "rgba(26,14,5,0.06)" : "#1a0e05",
-            color:      (!selectedId || !amount || !description) ? "rgba(26,14,5,0.25)" : "#f5f0e8",
-            cursor:     (!selectedId || !amount || !description) ? "not-allowed" : "pointer",
-            opacity:    loading ? 0.7 : 1,
-          }}
+          disabled={loading || !canSubmit}
+          className="w-full py-3.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+          style={{ background: canSubmit ? "#1a0e05" : "rgba(26,14,5,0.06)", color: canSubmit ? "#f5f0e8" : "rgba(26,14,5,0.25)" }}
         >
-          {loading ? "Processando..." : needsCard ? "Cobrar agora" : "Cobrar no cartão salvo"}
+          {loading
+            ? "Processando..."
+            : total > 0
+              ? `Cobrar R$${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} no cartão`
+              : "Selecione ao menos um item"}
         </button>
       </form>
 

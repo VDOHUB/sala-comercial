@@ -6,29 +6,45 @@ export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const logs = await prisma.accessLog.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 200,
-    include: {
-      booking: {
-        include: { client: true },
-      },
-    },
+  // Sessões ativas agora
+  const activeSessions = await prisma.booking.findMany({
+    where: { status: "ACTIVE" },
+    orderBy: { startAt: "asc" },
+    include: { client: true },
   });
 
-  // Normalize field names for the frontend
-  const normalized = logs.map((log) => ({
-    id: log.id,
-    action: log.event,
-    createdAt: log.createdAt,
-    booking: log.booking
-      ? {
-          client: { name: log.booking.client.name, email: log.booking.client.email },
-          startAt: log.booking.startAt,
-          endAt: log.booking.endAt,
-        }
-      : null,
-  }));
+  // Histórico de entradas (apenas GRANTED)
+  const logs = await prisma.accessLog.findMany({
+    where: { event: "GRANTED" },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+    include: { booking: { include: { client: true } } },
+  });
 
-  return NextResponse.json(normalized);
+  return NextResponse.json({
+    activeSessions: activeSessions.map((b) => ({
+      id:           b.id,
+      startAt:      b.startAt,
+      endAt:        b.endAt,
+      totalAmount:  b.totalAmount,
+      client: {
+        id:    b.client.id,
+        name:  b.client.name,
+        email: b.client.email,
+        phone: b.client.phone,
+        facePhoto:       b.client.facePhoto,
+        asaasCardToken:  b.client.asaasCardToken,
+        asaasCustomerId: b.client.asaasCustomerId,
+      },
+    })),
+    logs: logs.map((log) => ({
+      id:        log.id,
+      createdAt: log.createdAt,
+      booking:   log.booking ? {
+        client:  { name: log.booking.client.name, email: log.booking.client.email },
+        startAt: log.booking.startAt,
+        endAt:   log.booking.endAt,
+      } : null,
+    })),
+  });
 }

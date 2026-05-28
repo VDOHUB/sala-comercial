@@ -6,7 +6,7 @@ import {
   createControlIdUser,
   setControlIdPhoto,
 } from "@/lib/controlid/client";
-import { scheduleGrant, scheduleRevoke } from "@/lib/qstash";
+import { scheduleGrant, scheduleRevoke, scheduleEndingReminders } from "@/lib/qstash";
 
 // ── Registrar usuário no iDFace ───────────────────────────────────
 async function registerFaceOnDevice(client: {
@@ -130,6 +130,7 @@ export async function PATCH(
   try {
     await scheduleGrant(booking.id, booking.startAt);
     await scheduleRevoke(booking.id, booking.endAt);
+    await scheduleEndingReminders(booking.id, booking.endAt);
     console.log(`[facial/booking] access scheduled: grant@${booking.startAt.toISOString()} revoke@${booking.endAt.toISOString()}`);
   } catch (err) {
     console.error("[facial/booking] QStash schedule error:", err);

@@ -12,21 +12,25 @@ const PLAN_LABELS: Record<string, string> = {
 type Subscription = {
   id: string; planKey: string; totalCredits: number; usedCredits: number;
   status: string; expiresAt: string; totalAmount: number; token: string;
-  asaasChargeId: string | null; createdAt: string;
+  asaasChargeId: string | null; frozenReason: string | null; createdAt: string;
   client: { name: string; email: string; phone: string | null };
   _count: { bookings: number };
 };
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  ACTIVE:    { bg: "rgba(22,163,74,0.1)",  color: "#166534", label: "Ativo"     },
-  EXPIRED:   { bg: "rgba(220,38,38,0.08)", color: "#991b1b", label: "Expirado"  },
-  CANCELLED: { bg: "rgba(26,14,5,0.07)",   color: "rgba(26,14,5,0.45)", label: "Cancelado" },
+  ACTIVE:    { bg: "rgba(22,163,74,0.1)",   color: "#166534",             label: "Ativo"       },
+  FROZEN:    { bg: "rgba(59,130,246,0.1)",  color: "#1d4ed8",             label: "Congelado"   },
+  EXPIRED:   { bg: "rgba(220,38,38,0.08)",  color: "#991b1b",             label: "Expirado"    },
+  CANCELLED: { bg: "rgba(26,14,5,0.07)",    color: "rgba(26,14,5,0.45)", label: "Cancelado"   },
 };
 
 export default function AssinaturasPage() {
-  const [subs, setSubs]         = useState<Subscription[] | null>(null);
-  const [filter, setFilter]     = useState("");
+  const [subs, setSubs]           = useState<Subscription[] | null>(null);
+  const [filter, setFilter]       = useState("");
   const [refunding, setRefunding] = useState<string | null>(null);
+  const [freezeId, setFreezeId]   = useState<string | null>(null);
+  const [freezeReason, setFreezeReason] = useState("");
+  const [freezing, setFreezing]   = useState(false);
 
   function load() {
     fetch("/api/admin/assinaturas").then((r) => r.json()).then(setSubs);
@@ -45,6 +49,38 @@ export default function AssinaturasPage() {
     const json = await res.json();
     setRefunding(null);
     if (!res.ok) { alert(`Erro ao estornar: ${json.error}`); return; }
+    load();
+  }
+
+  async function handleFreeze(sub: Subscription) {
+    if (sub.status === "FROZEN") {
+      // descongelar
+      if (!confirm(`Descongelar assinatura de ${sub.client.name}?`)) return;
+      setFreezing(true);
+      await fetch(`/api/admin/assinaturas/${sub.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "unfreeze" }),
+      });
+      setFreezing(false);
+      load();
+    } else {
+      // abrir modal para motivo
+      setFreezeId(sub.id);
+      setFreezeReason("");
+    }
+  }
+
+  async function confirmFreeze() {
+    if (!freezeId) return;
+    setFreezing(true);
+    await fetch(`/api/admin/assinaturas/${freezeId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "freeze", reason: freezeReason }),
+    });
+    setFreezing(false);
+    setFreezeId(null);
     load();
   }
 
@@ -133,10 +169,27 @@ export default function AssinaturasPage() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <p className="text-xs" style={{ color: "rgba(26,14,5,0.38)" }}>
-                    Expira em {format(new Date(s.expiresAt), "dd/MM/yyyy", { locale: ptBR })}
-                  </p>
-                  <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-xs" style={{ color: "rgba(26,14,5,0.38)" }}>
+                      Expira em {format(new Date(s.expiresAt), "dd/MM/yyyy", { locale: ptBR })}
+                    </p>
+                    {s.status === "FROZEN" && s.frozenReason && (
+                      <p className="text-xs mt-0.5" style={{ color: "#1d4ed8" }}>
+                        Motivo: {s.frozenReason}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {(s.status === "ACTIVE" || s.status === "FROZEN") && (
+                      <button
+                        onClick={() => handleFreeze(s)}
+                        disabled={freezing}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-40 transition-colors"
+                        style={{ background: s.status === "FROZEN" ? "rgba(59,130,246,0.08)" : "rgba(26,14,5,0.06)", color: s.status === "FROZEN" ? "#1d4ed8" : "rgba(26,14,5,0.55)", border: `1px solid ${s.status === "FROZEN" ? "rgba(59,130,246,0.2)" : "rgba(26,14,5,0.1)"}` }}
+                      >
+                        {s.status === "FROZEN" ? "Descongelar" : "Congelar"}
+                      </button>
+                    )}
                     {s.status === "ACTIVE" && (
                       <button
                         onClick={() => handleRefund(s)}
@@ -157,6 +210,49 @@ export default function AssinaturasPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal de congelamento */}
+      {freezeId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+          onClick={(e) => { if (e.target === e.currentTarget && !freezing) setFreezeId(null); }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4"
+            style={{ background: "#faf7f2", border: "1px solid rgba(26,14,5,0.1)" }}>
+            <div className="flex items-center justify-between">
+              <p className="font-bold" style={{ color: "#1a0e05" }}>Congelar assinatura</p>
+              <button onClick={() => setFreezeId(null)} disabled={freezing}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-sm"
+                style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05" }}>✕</button>
+            </div>
+            <p className="text-sm" style={{ color: "rgba(26,14,5,0.5)" }}>
+              O cliente não poderá usar os créditos enquanto a assinatura estiver congelada.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+                style={{ color: "rgba(26,14,5,0.4)" }}>Motivo (opcional)</label>
+              <input
+                value={freezeReason}
+                onChange={(e) => setFreezeReason(e.target.value)}
+                placeholder="Ex: Contestação de cobrança"
+                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+                style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }}
+              />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setFreezeId(null)} disabled={freezing}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ background: "rgba(26,14,5,0.05)", color: "rgba(26,14,5,0.5)" }}>
+                Cancelar
+              </button>
+              <button onClick={confirmFreeze} disabled={freezing}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
+                style={{ background: "rgba(59,130,246,0.12)", color: "#1d4ed8", border: "1px solid rgba(59,130,246,0.2)" }}>
+                {freezing ? "Congelando..." : "Congelar"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
