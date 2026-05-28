@@ -80,6 +80,36 @@ export async function POST(
     }
   }
 
+  // ── Registrar vendas e baixar estoque ────────────────────────────
+  if (body.items && body.items.length > 0) {
+    const consumables = await prisma.consumable.findMany({
+      where: { id: { in: body.items.map((i) => i.consumableId) } },
+    });
+    await Promise.all(
+      body.items.map((item) => {
+        const c = consumables.find((x) => x.id === item.consumableId);
+        if (!c) return Promise.resolve();
+        return Promise.all([
+          prisma.consumableSale.create({
+            data: {
+              consumableId: c.id,
+              qty:          item.qty,
+              unitPrice:    c.price,
+              totalPrice:   c.price * item.qty,
+              clientId:     booking.clientId,
+              bookingId,
+              source:       "session",
+            },
+          }),
+          prisma.consumable.update({
+            where: { id: c.id },
+            data:  { stock: { decrement: item.qty } },
+          }),
+        ]);
+      })
+    );
+  }
+
   // ── Marcar reserva como COMPLETED ────────────────────────────────
   await prisma.booking.update({ where: { id: bookingId }, data: { status: "COMPLETED" } });
 

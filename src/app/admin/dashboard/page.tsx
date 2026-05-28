@@ -14,6 +14,8 @@ type DashData = {
     client: { name: string; email: string };
   }>;
   receitaUltimos6Meses: Array<{ mes: string; receita: number }>;
+  lowStockItems: Array<{ id: string; name: string; stock: number; minStock: number; photo: string | null }>;
+  consumableSalesMes: { revenue: number; qty: number };
 };
 
 function StatCard({ label, value, sub, positive }: {
@@ -65,6 +67,41 @@ export default function DashboardPage() {
           {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
         </p>
       </div>
+
+      {/* Alerta de estoque baixo */}
+      {data.lowStockItems.length > 0 && (
+        <div className="mb-6 rounded-2xl p-4"
+          style={{ background: "rgba(234,88,12,0.06)", border: "1px solid rgba(234,88,12,0.2)" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">⚠️</span>
+            <p className="text-sm font-bold" style={{ color: "#9a3412" }}>
+              {data.lowStockItems.length === 1
+                ? "1 item com estoque baixo"
+                : `${data.lowStockItems.length} itens com estoque baixo`}
+            </p>
+            <a href="/admin/insumos" className="ml-auto text-xs font-semibold underline" style={{ color: "#9a3412" }}>
+              Gerenciar →
+            </a>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {data.lowStockItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                style={{ background: "rgba(234,88,12,0.08)", border: "1px solid rgba(234,88,12,0.15)" }}>
+                {item.photo ? (
+                  <img src={item.photo} alt={item.name} className="w-5 h-5 rounded object-cover flex-shrink-0" />
+                ) : (
+                  <span className="text-sm">🧃</span>
+                )}
+                <span className="text-xs font-semibold" style={{ color: "#9a3412" }}>{item.name}</span>
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded-lg"
+                  style={{ background: item.stock === 0 ? "rgba(220,38,38,0.15)" : "rgba(234,88,12,0.15)", color: item.stock === 0 ? "#991b1b" : "#9a3412" }}>
+                  {item.stock === 0 ? "Zerado" : `${item.stock} un.`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -147,18 +184,32 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats adicionais */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl p-6 flex items-center gap-4" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
-          <div>
-            <p className="text-sm mb-1" style={{ color: "rgba(26,14,5,0.45)" }}>Total de clientes</p>
-            <p className="text-3xl font-bold" style={{ color: "#1a0e05" }}>{data.clientes.total}</p>
-          </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+          <p className="text-sm mb-1" style={{ color: "rgba(26,14,5,0.45)" }}>Total de clientes</p>
+          <p className="text-3xl font-bold" style={{ color: "#1a0e05" }}>{data.clientes.total}</p>
         </div>
-        <div className="rounded-2xl p-6 flex items-center gap-4" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
-          <div>
-            <p className="text-sm mb-1" style={{ color: "rgba(26,14,5,0.45)" }}>Novos este mês</p>
-            <p className="text-3xl font-bold" style={{ color: "#1a0e05" }}>{data.clientes.novos}</p>
-          </div>
+        <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+          <p className="text-sm mb-1" style={{ color: "rgba(26,14,5,0.45)" }}>Novos este mês</p>
+          <p className="text-3xl font-bold" style={{ color: "#1a0e05" }}>{data.clientes.novos}</p>
+        </div>
+        <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+          <p className="text-sm mb-1" style={{ color: "rgba(26,14,5,0.45)" }}>Frigobar/café este mês</p>
+          <p className="text-3xl font-bold" style={{ color: "#1a0e05" }}>
+            R$ {data.consumableSalesMes.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs mt-1" style={{ color: "rgba(26,14,5,0.38)" }}>
+            {data.consumableSalesMes.qty} itens vendidos
+          </p>
+        </div>
+        <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+          <p className="text-sm mb-1" style={{ color: "rgba(26,14,5,0.45)" }}>Alertas de estoque</p>
+          <p className="text-3xl font-bold" style={{ color: data.lowStockItems.length > 0 ? "#ea580c" : "#1a0e05" }}>
+            {data.lowStockItems.length}
+          </p>
+          <p className="text-xs mt-1" style={{ color: "rgba(26,14,5,0.38)" }}>
+            {data.lowStockItems.length === 0 ? "Estoque OK" : "iten(s) abaixo do mínimo"}
+          </p>
         </div>
       </div>
     </div>

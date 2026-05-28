@@ -12,6 +12,8 @@ export async function GET() {
   const mesAntes = { gte: startOfMonth(subMonths(now, 1)), lte: endOfMonth(subMonths(now, 1)) };
 
   const [
+    lowStockItems,
+    consumableSalesMes,
     receitaBookingMes,
     receitaSubMes,
     receitaBookingMesAnterior,
@@ -24,6 +26,17 @@ export async function GET() {
     reservasPorStatus,
     receitaUltimos6Meses,
   ] = await Promise.all([
+    // Insumos com estoque baixo (stock <= minStock)
+    prisma.consumable.findMany({
+      where: { active: true },
+      select: { id: true, name: true, stock: true, minStock: true, photo: true },
+      orderBy: { stock: "asc" },
+    }).then((items) => items.filter((i) => i.stock <= i.minStock)),
+    // Vendas de insumos no mês atual
+    prisma.consumableSale.aggregate({
+      where: { createdAt: mesAtual },
+      _sum: { totalPrice: true, qty: true },
+    }),
     // Receita mês atual — bookings (usa paidAt ou createdAt como fallback)
     prisma.booking.aggregate({
       where: {
@@ -118,5 +131,10 @@ export async function GET() {
     proximasReservas,
     reservasPorStatus,
     receitaUltimos6Meses: receitaUltimos6Meses.reverse(),
+    lowStockItems,
+    consumableSalesMes: {
+      revenue: consumableSalesMes._sum.totalPrice ?? 0,
+      qty:     consumableSalesMes._sum.qty ?? 0,
+    },
   });
 }

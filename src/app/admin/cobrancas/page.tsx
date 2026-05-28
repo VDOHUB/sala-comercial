@@ -104,7 +104,7 @@ export default function CobrancasPage() {
     setLoading(true); setResult(null);
 
     const description = buildDescription();
-    const body: Record<string, unknown> = { clientId: selectedId, amount, description };
+    const body: Record<string, unknown> = { clientId: selectedId, amount, description, items: selectedItems };
     if (needsCard) body.card = { ...card, number: card.number.replace(/\s/g, "") };
 
     const res  = await fetch("/api/admin/cobrancas", {

@@ -20,8 +20,9 @@ model Client {
   createdAt       DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bookings      Booking[]
-  subscriptions Subscription[]
+  bookings         Booking[]
+  subscriptions    Subscription[]
+  consumableSales  ConsumableSale[]
 
   @@map("clients")
 }
@@ -156,13 +157,35 @@ model Consumable {
   id          String   @id @default(cuid())
   name        String
   photo       String?  // base64 ou URL
-  price       Float
+  price       Float    // preço de venda
+  costPrice   Float?   // preço de custo (para margem)
   description String?
   active      Boolean  @default(true)
+  stock       Int      @default(0)  // estoque atual
+  minStock    Int      @default(2)  // estoque mínimo para alerta
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  sales       ConsumableSale[]
+
   @@map("consumables")
+}
+
+// ── Vendas de insumos ─────────────────────────────────────────────
+model ConsumableSale {
+  id           String      @id @default(cuid())
+  consumableId String
+  consumable   Consumable  @relation(fields: [consumableId], references: [id])
+  qty          Int
+  unitPrice    Float
+  totalPrice   Float
+  clientId     String?
+  client       Client?     @relation(fields: [clientId], references: [id])
+  bookingId    String?     // preenchido quando vem de finalizar sessão
+  source       String      // "session" | "manual"
+  createdAt    DateTime    @default(now())
+
+  @@map("consumable_sales")
 }
 
 // ── Configurações do sistema ──────────────────────────────────────

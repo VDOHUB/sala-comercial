@@ -14,13 +14,14 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { clientId, amount, description, card } = body as {
+  const { clientId, amount, description, card, items } = body as {
     clientId: string;
     amount: number;
     description: string;
     card?: {
       holderName: string; number: string; expiryMonth: string; expiryYear: string; ccv: string;
     };
+    items?: { consumableId: string; qty: number }[];
   };
 
   if (!clientId || !amount || !description) {
@@ -90,6 +91,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Este cliente não tem cartão salvo. Informe os dados do cartão.", needsCard: true },
         { status: 422 }
+      );
+    }
+
+    // ── Baixa de estoque e registro de vendas ─────────────────────
+    if (items && items.length > 0) {
+      const consumables = await prisma.consumable.findMany({
+        where: { id: { in: items.map((i) => i.consumableId) } },
+      });
+      await Promise.all(
+        items.map((item) => {
+          const c = consumables.find((x) => x.id === item.consumableId);
+          if (!c) return Promise.resolve();
+          return Promise.all([
+            prisma.consumableSale.create({
+              data: {
+                consumableId: c.id,
+                qty:          item.qty,
+                unitPrice:    c.price,
+                totalPrice:   c.price * item.qty,
+                clientId,
+                source:       "manual",
+              },
+            }),
+            prisma.consumable.update({
+              where: { id: c.id },
+              data:  { stock: { decrement: item.qty } },
+            }),
+          ]);
+        })
       );
     }
 
