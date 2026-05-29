@@ -7,6 +7,22 @@ import {
   setControlIdPhoto,
 } from "@/lib/controlid/client";
 import { scheduleGrant, scheduleRevoke, scheduleEndingReminders } from "@/lib/qstash";
+import sharp from "sharp";
+
+// Redimensiona para no máximo 1080×1080 e converte para JPEG (limite iDFace: 1920×1080)
+async function resizeForIdFace(photoBase64: string): Promise<string> {
+  try {
+    const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+    const resized = await sharp(buffer)
+      .resize(1080, 1080, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    return `data:image/jpeg;base64,${resized.toString("base64")}`;
+  } catch {
+    return photoBase64; // fallback: foto original
+  }
+}
 
 // ── Registrar usuário no iDFace ───────────────────────────────────
 async function registerFaceOnDevice(client: {
@@ -61,6 +77,9 @@ export async function PATCH(
     return NextResponse.json({ error: "Foto não enviada" }, { status: 400 });
   }
 
+  // Redimensionar antes de salvar e enviar ao iDFace
+  const photo = await resizeForIdFace(photoBase64);
+
   // ── Assinatura multi-período ──────────────────────────────────────
   if (isSubscription) {
     const subscription = await prisma.subscription.findUnique({
@@ -71,11 +90,11 @@ export async function PATCH(
 
     await prisma.client.update({
       where: { id: subscription.clientId },
-      data:  { facePhoto: photoBase64 },
+      data:  { facePhoto: photo },
     });
 
     // Registrar no iDFace (não bloqueia se falhar)
-    const faceUserId = await registerFaceOnDevice(subscription.client, photoBase64);
+    const faceUserId = await registerFaceOnDevice(subscription.client, photo);
     if (!faceUserId) {
       const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
       const retryUrl = `${baseUrl}/refazer-foto/${id}?type=subscription`;
@@ -111,11 +130,11 @@ export async function PATCH(
 
   await prisma.client.update({
     where: { id: booking.clientId },
-    data:  { facePhoto: photoBase64 },
+    data:  { facePhoto: photo },
   });
 
   // Registrar no iDFace (não bloqueia se falhar)
-  const faceUserId2 = await registerFaceOnDevice(booking.client, photoBase64);
+  const faceUserId2 = await registerFaceOnDevice(booking.client, photo);
   if (!faceUserId2) {
     const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
     const retryUrl = `${baseUrl}/refazer-foto/${id}`;
