@@ -18,7 +18,7 @@ const EMPTY_FORM = {
   photo: "", stockDeposito: "", stockFrigobar: "", minStock: "2",
 };
 
-const UNITS = ["LATA", "GARRAFA", "SACHÊ", "UN", "KG", "L", "PCT"];
+const UNITS = ["LATA", "GARRAFA", "CÁPSULA", "SACHÊ", "UN", "KG", "L", "PCT"];
 
 export default function InsumosPage() {
   const [items, setItems]       = useState<Consumable[]>([]);

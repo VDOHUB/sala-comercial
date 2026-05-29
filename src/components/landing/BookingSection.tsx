@@ -9,7 +9,9 @@ const PERIODS = [
   { id: "AFTERNOON", label: "Vespertino",  hours: "14h00 — 19h00", startHour: 14, endHour: 19 },
 ];
 
-const DAYS = Array.from({ length: 60 }, (_, i) => addDays(new Date(), i + 1))
+// MIN_DAYS_AHEAD: 0 = pode agendar hoje, 1 = só a partir de amanhã
+const MIN_DAYS_AHEAD = 0;
+const DAYS = Array.from({ length: 60 }, (_, i) => addDays(new Date(), i + MIN_DAYS_AHEAD))
   .filter((d) => !isWeekend(d))
   .slice(0, 30);
 

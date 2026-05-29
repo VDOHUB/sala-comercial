@@ -9,7 +9,8 @@ const PERIODS = [
   { id: "AFTERNOON", label: "Vespertino", hours: "14h00 — 19h00", startHour: 14, endHour: 19 },
 ];
 
-const DAYS = Array.from({ length: 90 }, (_, i) => addDays(new Date(), i + 1))
+const MIN_DAYS_AHEAD = 0; // 0 = hoje, 1 = só amanhã
+const DAYS = Array.from({ length: 90 }, (_, i) => addDays(new Date(), i + MIN_DAYS_AHEAD))
   .filter((d) => !isWeekend(d))
   .slice(0, 60);
 
