@@ -64,7 +64,7 @@ export default function ClientesPage() {
   const [faceModal, setFaceModal]     = useState(false);
   const [facePreview, setFacePreview] = useState<string | null>(null);
   const [faceUploading, setFaceUploading] = useState(false);
-  const [faceResult, setFaceResult]   = useState<{ ok?: boolean; idFaceOk?: boolean; idFaceError?: string | null; error?: string; qstashResults?: { bookingId: string; ok: boolean; error?: string }[] } | null>(null);
+  const [faceResult, setFaceResult]   = useState<{ ok?: boolean; idFaceOk?: boolean; idFaceError?: string | null; error?: string; qstashResults?: { bookingId: string; action: string; ok: boolean; error?: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -561,19 +561,19 @@ export default function ClientesPage() {
                         </p>
                       )}
                       {faceResult.qstashResults && faceResult.qstashResults.length > 0 && (
-                        faceResult.qstashResults.every((r) => r.ok) ? (
-                          <p className="text-xs" style={{ color: "#166534" }}>
-                            ✓ Acesso agendado para {faceResult.qstashResults.length} reserva{faceResult.qstashResults.length > 1 ? "s" : ""}
+                        faceResult.qstashResults.map((r, i) => (
+                          <p key={i} className="text-xs" style={{ color: r.ok ? "#166534" : "#854d0e" }}>
+                            {r.ok
+                              ? r.action === "granted_now"
+                                ? "✓ Acesso liberado imediatamente na fechadura"
+                                : "✓ Acesso agendado para o horário da reserva"
+                              : `⚠ Erro: ${r.error}`}
                           </p>
-                        ) : (
-                          <p className="text-xs" style={{ color: "#854d0e" }}>
-                            ⚠ Falha ao agendar acesso — contate o suporte
-                          </p>
-                        )
+                        ))
                       )}
                       {faceResult.qstashResults?.length === 0 && faceResult.idFaceOk && (
                         <p className="text-xs" style={{ color: "rgba(26,14,5,0.45)" }}>
-                          ℹ Nenhuma reserva futura encontrada para agendar acesso
+                          ℹ Nenhuma reserva ativa ou futura encontrada
                         </p>
                       )}
                     </>
