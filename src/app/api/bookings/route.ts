@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createAsaasCustomer, createAsaasCharge, tokenizeAsaasCard } from "@/lib/asaas/client";
+import { createAsaasCustomer, updateAsaasCustomer, createAsaasCharge, tokenizeAsaasCard } from "@/lib/asaas/client";
 import { sendBookingConfirmation, sendSubscriptionConfirmation } from "@/lib/resend/emails";
 import { z } from "zod";
 import { format, addDays, addMonths } from "date-fns";
@@ -142,9 +142,15 @@ export async function POST(req: NextRequest) {
     // CPF: prioridade para o que veio no formulário do cartão, fallback para o cadastro do cliente
     const cpfCnpj = data.card.cpf || client.cpf || undefined;
 
-    // Salvar CPF no cliente se ainda não tinha
+    // Salvar CPF no cliente se ainda não tinha e atualizar no ASAAS
     if (data.card.cpf && !client.cpf) {
       await prisma.client.update({ where: { id: client.id }, data: { cpf: data.card.cpf } });
+      // Atualizar cadastro no ASAAS com CPF (necessário para cobrança de cartão)
+      try {
+        await updateAsaasCustomer(asaasCustomerId, { cpfCnpj: data.card.cpf });
+      } catch (e) {
+        console.warn("[bookings] falha ao atualizar CPF no ASAAS:", e);
+      }
     }
 
     const holderInfo = {

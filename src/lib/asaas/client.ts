@@ -19,6 +19,14 @@ export async function createAsaasCustomer(data: {
   return res.data as { id: string };
 }
 
+// ── Atualizar cliente no ASAAS ────────────────────────────────────
+export async function updateAsaasCustomer(customerId: string, data: {
+  cpfCnpj?: string;
+  phone?: string;
+}) {
+  await asaas.post(`/customers/${customerId}`, data);
+}
+
 // ── Criar cobrança ────────────────────────────────────────────────
 export async function createAsaasCharge(data: {
   customer: string;
