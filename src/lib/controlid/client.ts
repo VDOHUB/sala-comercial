@@ -51,7 +51,7 @@ export async function setControlIdPhoto(
   userId: number,
   photoBase64: string  // base64 sem prefixo data:image/...
 ): Promise<void> {
-  const data = await fcgi<{ results?: { user_id: number; success: boolean; errors: string }[] }>(
+  const data = await fcgi<{ results?: { user_id: number; success: boolean; errors: unknown }[] }>(
     session, "user_set_image_list.fcgi", {
       match: true,
       user_images: [{
@@ -62,8 +62,12 @@ export async function setControlIdPhoto(
     }
   );
   const result = data.results?.[0];
+  console.log(`[controlid] setPhoto result for user ${userId}:`, JSON.stringify(data));
   if (!result?.success) {
-    throw new Error(`ControlID face upload failed for user ${userId}: ${result?.errors || "unknown error"}`);
+    const errDetail = result?.errors
+      ? (typeof result.errors === "string" ? result.errors : JSON.stringify(result.errors))
+      : "unknown error";
+    throw new Error(`ControlID face upload failed for user ${userId}: ${errDetail}`);
   }
 }
 
