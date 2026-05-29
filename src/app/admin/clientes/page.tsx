@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -59,6 +59,13 @@ export default function ClientesPage() {
   // Exclusão
   const [deleting, setDeleting]       = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Foto facial (upload pelo admin)
+  const [faceModal, setFaceModal]     = useState(false);
+  const [facePreview, setFacePreview] = useState<string | null>(null);
+  const [faceUploading, setFaceUploading] = useState(false);
+  const [faceResult, setFaceResult]   = useState<{ ok?: boolean; idFaceOk?: boolean; idFaceError?: string | null; error?: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
@@ -121,6 +128,39 @@ export default function ClientesPage() {
     if (!res.ok) { setDeleteError(data.error ?? "Erro ao excluir."); return; }
     setSelected(null);
     loadList();
+  }
+
+  function openFaceModal() {
+    setFacePreview(null);
+    setFaceResult(null);
+    setFaceModal(true);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setFacePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function handleFaceUpload() {
+    if (!selected || !facePreview) return;
+    setFaceUploading(true);
+    setFaceResult(null);
+    const res  = await fetch(`/api/admin/clientes/${selected.id}/facial`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ photoBase64: facePreview }),
+    });
+    const data = await res.json();
+    setFaceUploading(false);
+    setFaceResult(data);
+    if (res.ok) {
+      // Atualiza a foto no painel e na lista
+      setSelected((prev) => prev ? { ...prev, facePhoto: facePreview } : prev);
+      setClients((prev) => prev.map((c) => c.id === selected.id ? { ...c, facePhoto: facePreview } : c));
+    }
   }
 
   const filtered = clients.filter((c) =>
@@ -243,16 +283,23 @@ export default function ClientesPage() {
             </div>
             {/* Botões editar / excluir */}
             {selected && !editing && (
-              <div className="flex gap-2 mt-3">
-                <button onClick={startEdit}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-colors"
-                  style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05" }}>
-                  ✏️ Editar dados
-                </button>
-                <button onClick={handleDelete} disabled={deleting}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40"
-                  style={{ background: "rgba(220,38,38,0.07)", color: "#991b1b" }}>
-                  {deleting ? "Excluindo..." : "🗑 Excluir cliente"}
+              <div className="space-y-2 mt-3">
+                <div className="flex gap-2">
+                  <button onClick={startEdit}
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold transition-colors"
+                    style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05" }}>
+                    ✏️ Editar dados
+                  </button>
+                  <button onClick={handleDelete} disabled={deleting}
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40"
+                    style={{ background: "rgba(220,38,38,0.07)", color: "#991b1b" }}>
+                    {deleting ? "Excluindo..." : "🗑 Excluir"}
+                  </button>
+                </div>
+                <button onClick={openFaceModal}
+                  className="w-full py-2 rounded-xl text-xs font-semibold transition-colors"
+                  style={{ background: "rgba(37,99,235,0.08)", color: "#1e40af", border: "1px solid rgba(37,99,235,0.15)" }}>
+                  📷 {selected.facePhoto ? "Substituir foto facial" : "Cadastrar foto facial"}
                 </button>
               </div>
             )}
@@ -448,6 +495,96 @@ export default function ClientesPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+      {/* ── Modal: cadastro de foto facial ── */}
+      {faceModal && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={(e) => { if (e.target === e.currentTarget && !faceUploading) setFaceModal(false); }}>
+          <div className="w-full max-w-sm rounded-2xl overflow-hidden"
+            style={{ background: "#faf7f2", border: "1px solid rgba(26,14,5,0.1)" }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: "1px solid rgba(26,14,5,0.08)" }}>
+              <div>
+                <p className="font-bold text-sm" style={{ color: "#1a0e05" }}>Cadastrar foto facial</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(26,14,5,0.45)" }}>{selected.name}</p>
+              </div>
+              <button onClick={() => setFaceModal(false)} disabled={faceUploading}
+                className="w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05" }}>✕</button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Preview / placeholder */}
+              <div className="flex justify-center">
+                {facePreview ? (
+                  <img src={facePreview} alt="preview"
+                    className="w-40 h-40 rounded-2xl object-cover"
+                    style={{ border: "2px solid rgba(26,14,5,0.1)" }} />
+                ) : (
+                  <div className="w-40 h-40 rounded-2xl flex flex-col items-center justify-center gap-2"
+                    style={{ background: "rgba(26,14,5,0.04)", border: "2px dashed rgba(26,14,5,0.15)" }}>
+                    <span className="text-4xl">📷</span>
+                    <p className="text-xs text-center px-4" style={{ color: "rgba(26,14,5,0.4)" }}>
+                      Selecione uma foto do rosto do cliente
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Botão de selecionar arquivo */}
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+              <button onClick={() => fileInputRef.current?.click()}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }}>
+                {facePreview ? "Trocar foto" : "Escolher arquivo"}
+              </button>
+
+              {/* Resultado */}
+              {faceResult && (
+                <div className="rounded-xl px-4 py-3 text-sm space-y-1"
+                  style={{
+                    background: faceResult.ok ? "rgba(22,163,74,0.07)" : "rgba(220,38,38,0.07)",
+                    border: `1px solid ${faceResult.ok ? "rgba(22,163,74,0.2)" : "rgba(220,38,38,0.2)"}`,
+                  }}>
+                  {faceResult.ok ? (
+                    <>
+                      <p className="font-semibold" style={{ color: "#166534" }}>✓ Foto salva com sucesso!</p>
+                      {faceResult.idFaceOk ? (
+                        <p className="text-xs" style={{ color: "#166534" }}>✓ Registrado no iDFace</p>
+                      ) : (
+                        <p className="text-xs" style={{ color: "#854d0e" }}>
+                          ⚠ Foto salva, mas falhou no iDFace: {faceResult.idFaceError}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p style={{ color: "#991b1b" }}>{faceResult.error}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Ações */}
+              <div className="flex gap-3">
+                <button onClick={() => setFaceModal(false)} disabled={faceUploading}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                  style={{ background: "rgba(26,14,5,0.05)", color: "rgba(26,14,5,0.5)" }}>
+                  {faceResult?.ok ? "Fechar" : "Cancelar"}
+                </button>
+                {!faceResult?.ok && (
+                  <button onClick={handleFaceUpload}
+                    disabled={faceUploading || !facePreview}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40"
+                    style={{ background: "#1a0e05", color: "#f5f0e8" }}>
+                    {faceUploading ? "Enviando..." : "Cadastrar no iDFace"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
