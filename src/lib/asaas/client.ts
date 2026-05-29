@@ -39,7 +39,7 @@ export async function createAsaasCharge(data: {
   creditCardHolderInfo?: {
     name: string;
     email: string;
-    cpfCnpj: string;
+    cpfCnpj?: string;
     phone?: string;
     postalCode?: string;
     addressNumber?: string;
@@ -81,7 +81,7 @@ export async function tokenizeAsaasCard(data: {
   creditCardHolderInfo: {
     name: string;
     email: string;
-    cpfCnpj: string;
+    cpfCnpj?: string;
     phone?: string;
     postalCode?: string;
     addressNumber?: string;
