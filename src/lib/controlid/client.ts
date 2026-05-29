@@ -31,11 +31,39 @@ async function fcgi<T>(session: string, path: string, body: unknown): Promise<T>
   return res.json() as Promise<T>;
 }
 
+// ── Buscar usuário por registration (clientId) ────────────────────
+export async function findControlIdUserByRegistration(
+  session: string,
+  registration: string
+): Promise<number | null> {
+  try {
+    const data = await fcgi<{ users?: { id: number; registration: string }[] }>(
+      session, "load_objects.fcgi", {
+        object: "users",
+        where:  { users: { registration } },
+      }
+    );
+    // Pega o ID mais alto (mais recente) caso haja duplicatas
+    const users = data.users ?? [];
+    if (users.length === 0) return null;
+    return users.sort((a, b) => b.id - a.id)[0].id;
+  } catch {
+    return null;
+  }
+}
+
 // ── Criar usuário ─────────────────────────────────────────────────
 export async function createControlIdUser(
   session: string,
   opts: { name: string; registration: string }
 ): Promise<{ userId: number }> {
+  // Evita duplicatas: verifica se já existe antes de criar
+  const existing = await findControlIdUserByRegistration(session, opts.registration);
+  if (existing) {
+    console.log(`[controlid] reusing existing user ${existing} for registration ${opts.registration}`);
+    return { userId: existing };
+  }
+
   const data = await fcgi<{ ids?: number[] }>(session, "create_objects.fcgi", {
     object: "users",
     values: [{ name: opts.name, registration: opts.registration, password: "" }],
