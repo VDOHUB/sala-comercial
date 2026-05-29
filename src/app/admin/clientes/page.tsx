@@ -37,26 +37,90 @@ type ClientDetail = Client & {
   }>;
 };
 
+const inputStyle = {
+  background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)",
+  color: "#1a0e05", borderRadius: "0.75rem", padding: "0.5rem 0.875rem",
+  fontSize: "0.875rem", width: "100%", outline: "none",
+};
+
 export default function ClientesPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<ClientDetail | null>(null);
+  const [clients, setClients]         = useState<Client[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState("");
+  const [selected, setSelected]       = useState<ClientDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Edição
+  const [editing, setEditing]         = useState(false);
+  const [editForm, setEditForm]       = useState({ name: "", email: "", phone: "", cpf: "" });
+  const [saving, setSaving]           = useState(false);
+  const [saveError, setSaveError]     = useState<string | null>(null);
+
+  // Exclusão
+  const [deleting, setDeleting]       = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
-  useEffect(() => {
+  function loadList() {
     fetch("/api/admin/clientes")
       .then((r) => r.json())
       .then((data) => { setClients(data); setLoading(false); });
-  }, []);
+  }
+
+  useEffect(() => { loadList(); }, []);
 
   async function openClient(id: string) {
     setDetailLoading(true);
+    setEditing(false);
+    setSaveError(null);
+    setDeleteError(null);
     const data = await fetch(`/api/admin/clientes/${id}`).then((r) => r.json());
     setSelected(data);
     setDetailLoading(false);
+  }
+
+  function startEdit() {
+    if (!selected) return;
+    setEditForm({
+      name:  selected.name,
+      email: selected.email,
+      phone: selected.phone ?? "",
+      cpf:   selected.cpf   ?? "",
+    });
+    setEditing(true);
+    setSaveError(null);
+  }
+
+  async function handleSave() {
+    if (!selected) return;
+    setSaving(true);
+    setSaveError(null);
+    const res = await fetch(`/api/admin/clientes/${selected.id}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(editForm),
+    });
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok) { setSaveError(data.error ?? "Erro ao salvar."); return; }
+    // Atualiza o painel e a lista
+    setSelected((prev) => prev ? { ...prev, ...data } : prev);
+    setClients((prev) => prev.map((c) => c.id === selected.id ? { ...c, ...data } : c));
+    setEditing(false);
+  }
+
+  async function handleDelete() {
+    if (!selected) return;
+    if (!confirm(`Excluir "${selected.name}" permanentemente?\n\nTodos os dados deste cliente serão removidos.`)) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const res  = await fetch(`/api/admin/clientes/${selected.id}`, { method: "DELETE" });
+    const data = await res.json();
+    setDeleting(false);
+    if (!res.ok) { setDeleteError(data.error ?? "Erro ao excluir."); return; }
+    setSelected(null);
+    loadList();
   }
 
   const filtered = clients.filter((c) =>
@@ -66,7 +130,7 @@ export default function ClientesPage() {
 
   return (
     <div className="flex gap-6 h-full">
-      {/* Lista */}
+      {/* ── Lista ── */}
       <div className={selected ? "flex-1 min-w-0" : "w-full"}>
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -122,12 +186,9 @@ export default function ClientesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {c.facePhoto ? (
-                          <img
-                            src={c.facePhoto}
-                            alt={c.name}
+                          <img src={c.facePhoto} alt={c.name}
                             className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                            style={{ border: "1px solid rgba(26,14,5,0.1)" }}
-                          />
+                            style={{ border: "1px solid rgba(26,14,5,0.1)" }} />
                         ) : (
                           <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
                             style={{ background: "rgba(26,14,5,0.08)", color: "#1a0e05" }}>
@@ -165,18 +226,42 @@ export default function ClientesPage() {
         )}
       </div>
 
-      {/* Painel de detalhe */}
+      {/* ── Painel de detalhe ── */}
       {(selected || detailLoading) && (
         <div className="w-96 flex-shrink-0 rounded-2xl overflow-y-auto max-h-[calc(100vh-8rem)]"
           style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
-          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
+
+          {/* Header */}
+          <div className="sticky top-0 z-10 px-5 py-4"
             style={{ background: "#f5f0e8", borderBottom: "1px solid rgba(26,14,5,0.07)" }}>
-            <p className="font-semibold text-sm" style={{ color: "#1a0e05" }}>
-              {selected ? selected.name : "Carregando..."}
-            </p>
-            <button onClick={() => setSelected(null)}
-              className="text-lg leading-none px-1"
-              style={{ color: "rgba(26,14,5,0.35)" }}>×</button>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-sm" style={{ color: "#1a0e05" }}>
+                {selected ? selected.name : "Carregando..."}
+              </p>
+              <button onClick={() => { setSelected(null); setEditing(false); }}
+                className="text-lg leading-none px-1" style={{ color: "rgba(26,14,5,0.35)" }}>×</button>
+            </div>
+            {/* Botões editar / excluir */}
+            {selected && !editing && (
+              <div className="flex gap-2 mt-3">
+                <button onClick={startEdit}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-colors"
+                  style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05" }}>
+                  ✏️ Editar dados
+                </button>
+                <button onClick={handleDelete} disabled={deleting}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40"
+                  style={{ background: "rgba(220,38,38,0.07)", color: "#991b1b" }}>
+                  {deleting ? "Excluindo..." : "🗑 Excluir cliente"}
+                </button>
+              </div>
+            )}
+            {deleteError && (
+              <p className="mt-2 text-xs px-3 py-2 rounded-xl"
+                style={{ background: "rgba(220,38,38,0.07)", color: "#991b1b" }}>
+                {deleteError}
+              </p>
+            )}
           </div>
 
           {detailLoading ? (
@@ -185,16 +270,14 @@ export default function ClientesPage() {
             </div>
           ) : selected && (
             <div className="p-5 space-y-5">
+
               {/* Foto facial */}
               {selected.facePhoto ? (
                 <div className="flex justify-center">
                   <div className="relative">
-                    <img
-                      src={selected.facePhoto}
-                      alt={selected.name}
+                    <img src={selected.facePhoto} alt={selected.name}
                       className="w-24 h-24 rounded-2xl object-cover"
-                      style={{ border: "1px solid rgba(26,14,5,0.1)" }}
-                    />
+                      style={{ border: "1px solid rgba(26,14,5,0.1)" }} />
                     <span className="absolute -bottom-1.5 -right-1.5 text-xs px-1.5 py-0.5 rounded-full font-semibold"
                       style={{ background: "rgba(22,163,74,0.1)", color: "#166534", border: "1px solid rgba(22,163,74,0.2)" }}>
                       ✓ Facial
@@ -213,32 +296,71 @@ export default function ClientesPage() {
                 </div>
               )}
 
-              {/* Info básica */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span style={{ color: "rgba(26,14,5,0.45)" }}>E-mail</span>
-                  <span style={{ color: "#1a0e05" }}>{selected.email}</span>
-                </div>
-                {selected.phone && (
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: "rgba(26,14,5,0.45)" }}>WhatsApp</span>
-                    <a href={`https://wa.me/55${selected.phone.replace(/\D/g,"")}`} target="_blank"
-                      className="font-medium hover:underline" style={{ color: "#1a0e05" }}>
-                      {selected.phone}
-                    </a>
+              {/* ── Formulário de edição ── */}
+              {editing ? (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.4)" }}>
+                    Editar dados do cliente
+                  </p>
+                  {[
+                    { label: "Nome",     key: "name",  placeholder: "Nome completo" },
+                    { label: "E-mail",   key: "email", placeholder: "email@exemplo.com" },
+                    { label: "WhatsApp", key: "phone", placeholder: "(62) 99999-9999" },
+                    { label: "CPF",      key: "cpf",   placeholder: "00000000000" },
+                  ].map(({ label, key, placeholder }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-semibold uppercase tracking-wider mb-1"
+                        style={{ color: "rgba(26,14,5,0.4)" }}>{label}</label>
+                      <input
+                        value={editForm[key as keyof typeof editForm]}
+                        onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                        placeholder={placeholder}
+                        style={inputStyle}
+                      />
+                    </div>
+                  ))}
+
+                  {saveError && (
+                    <p className="text-xs px-3 py-2 rounded-xl"
+                      style={{ background: "rgba(220,38,38,0.07)", color: "#991b1b" }}>
+                      {saveError}
+                    </p>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => { setEditing(false); setSaveError(null); }} disabled={saving}
+                      className="flex-1 py-2.5 rounded-xl text-xs font-semibold"
+                      style={{ background: "rgba(26,14,5,0.06)", color: "rgba(26,14,5,0.5)" }}>
+                      Cancelar
+                    </button>
+                    <button onClick={handleSave} disabled={saving || !editForm.name || !editForm.email}
+                      className="flex-1 py-2.5 rounded-xl text-xs font-bold disabled:opacity-40"
+                      style={{ background: "#1a0e05", color: "#f5f0e8" }}>
+                      {saving ? "Salvando..." : "Salvar"}
+                    </button>
                   </div>
-                )}
-                {selected.cpf && (
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: "rgba(26,14,5,0.45)" }}>CPF</span>
-                    <span style={{ color: "#1a0e05" }}>{selected.cpf}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span style={{ color: "rgba(26,14,5,0.45)" }}>Cadastro</span>
-                  <span style={{ color: "#1a0e05" }}>{format(new Date(selected.createdAt), "dd/MM/yyyy", { locale: ptBR })}</span>
                 </div>
-              </div>
+              ) : (
+                /* ── Info básica (modo leitura) ── */
+                <div className="space-y-2">
+                  {[
+                    { label: "E-mail",   value: selected.email },
+                    { label: "WhatsApp", value: selected.phone },
+                    { label: "CPF",      value: selected.cpf },
+                    { label: "Cadastro", value: format(new Date(selected.createdAt), "dd/MM/yyyy", { locale: ptBR }) },
+                  ].map(({ label, value }) => value ? (
+                    <div key={label} className="flex justify-between text-sm">
+                      <span style={{ color: "rgba(26,14,5,0.45)" }}>{label}</span>
+                      {label === "WhatsApp" ? (
+                        <a href={`https://wa.me/55${value.replace(/\D/g,"")}`} target="_blank"
+                          className="font-medium hover:underline" style={{ color: "#1a0e05" }}>{value}</a>
+                      ) : (
+                        <span style={{ color: "#1a0e05" }}>{value}</span>
+                      )}
+                    </div>
+                  ) : null)}
+                </div>
+              )}
 
               {/* Assinaturas */}
               {selected.subscriptions.length > 0 && (
