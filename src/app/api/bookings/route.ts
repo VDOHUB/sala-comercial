@@ -15,6 +15,7 @@ const PLANS: Record<string, { label: string; price: number; credits: number; val
 
 const cardSchema = z.object({
   holderName:         z.string().min(2),
+  cpf:                z.string().min(11).max(14).optional(),
   number:             z.string().min(13),
   expiryMonth:        z.string().length(2),
   expiryYear:         z.string().min(4),
@@ -138,10 +139,18 @@ export async function POST(req: NextRequest) {
       expiryYear:  data.card.expiryYear,
       ccv:         data.card.ccv,
     };
+    // CPF: prioridade para o que veio no formulário do cartão, fallback para o cadastro do cliente
+    const cpfCnpj = data.card.cpf || client.cpf || undefined;
+
+    // Salvar CPF no cliente se ainda não tinha
+    if (data.card.cpf && !client.cpf) {
+      await prisma.client.update({ where: { id: client.id }, data: { cpf: data.card.cpf } });
+    }
+
     const holderInfo = {
       name:              client.name,
       email:             client.email,
-      cpfCnpj:          client.cpf ?? undefined,
+      cpfCnpj,
       phone:             client.phone ?? undefined,
       postalCode:        data.card.postalCode ?? undefined,
       addressNumber:     data.card.addressNumber ?? undefined,

@@ -108,7 +108,7 @@ export function BookingSection() {
   const [voucherError, setVoucherError]     = useState("");
 
   // Cartão
-  const [card, setCard] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "", addressNumber: "", addressComplement: "", address: "" });
+  const [card, setCard] = useState({ holderName: "", cpf: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "", addressNumber: "", addressComplement: "", address: "" });
   const [cepLoading, setCepLoading] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(1);
 
@@ -701,6 +701,9 @@ export function BookingSection() {
                   <InputField label="Nome no cartão" required value={card.holderName}
                     onChange={(e) => setCard({...card, holderName: e.target.value})}
                     placeholder="Como está no cartão" />
+                  <InputField label="CPF do titular" required value={card.cpf}
+                    onChange={(e) => setCard({...card, cpf: e.target.value.replace(/\D/g,"").slice(0,11)})}
+                    placeholder="00000000000" maxLength={11} inputMode="numeric" />
                   <InputField label="Número do cartão" required value={card.number}
                     onChange={(e) => setCard({...card, number: formatCardNumber(e.target.value)})}
                     placeholder="0000 0000 0000 0000" maxLength={19} inputMode="numeric" />
