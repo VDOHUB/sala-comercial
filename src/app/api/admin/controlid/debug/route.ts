@@ -5,7 +5,7 @@ import { loginControlId } from "@/lib/controlid/client";
 const BASE_URL = process.env.CONTROLID_URL!;
 
 async function fcgiGet(session: string, object: string) {
-  const res = await fetch(`${BASE_URL}/get_objects.fcgi?session=${session}`, {
+  const res = await fetch(`${BASE_URL}/load_objects.fcgi?session=${session}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ object }),
