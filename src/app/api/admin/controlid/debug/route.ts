@@ -23,15 +23,18 @@ export async function GET() {
 
   try {
     const session = await loginControlId();
-    const [accessRules, portals, userAccessRules, accessRulePortals, users] = await Promise.all([
+    const results = await Promise.all([
       fcgiGet(session, "access_rules"),
       fcgiGet(session, "portals"),
-      fcgiGet(session, "user_accessrules"),
-      fcgiGet(session, "accessrule_portals"),
-      fcgiGet(session, "users"),
+      fcgiGet(session, "groups"),
+      fcgiGet(session, "user_groups"),
+      fcgiGet(session, "group_accessrules"),
+      fcgiGet(session, "group_portals"),
+      fcgiGet(session, "time_zones"),
     ]);
 
-    return NextResponse.json({ accessRules, portals, userAccessRules, accessRulePortals, users });
+    const [accessRules, portals, groups, userGroups, groupAccessRules, groupPortals, timeZones] = results;
+    return NextResponse.json({ accessRules, portals, groups, userGroups, groupAccessRules, groupPortals, timeZones });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
