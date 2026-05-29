@@ -64,7 +64,7 @@ export default function ClientesPage() {
   const [faceModal, setFaceModal]     = useState(false);
   const [facePreview, setFacePreview] = useState<string | null>(null);
   const [faceUploading, setFaceUploading] = useState(false);
-  const [faceResult, setFaceResult]   = useState<{ ok?: boolean; idFaceOk?: boolean; idFaceError?: string | null; error?: string } | null>(null);
+  const [faceResult, setFaceResult]   = useState<{ ok?: boolean; idFaceOk?: boolean; idFaceError?: string | null; error?: string; qstashResults?: { bookingId: string; ok: boolean; error?: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -557,7 +557,23 @@ export default function ClientesPage() {
                         <p className="text-xs" style={{ color: "#166534" }}>✓ Registrado no iDFace</p>
                       ) : (
                         <p className="text-xs" style={{ color: "#854d0e" }}>
-                          ⚠ Foto salva, mas falhou no iDFace: {faceResult.idFaceError}
+                          ⚠ Falhou no iDFace: {faceResult.idFaceError}
+                        </p>
+                      )}
+                      {faceResult.qstashResults && faceResult.qstashResults.length > 0 && (
+                        faceResult.qstashResults.every((r) => r.ok) ? (
+                          <p className="text-xs" style={{ color: "#166534" }}>
+                            ✓ Acesso agendado para {faceResult.qstashResults.length} reserva{faceResult.qstashResults.length > 1 ? "s" : ""}
+                          </p>
+                        ) : (
+                          <p className="text-xs" style={{ color: "#854d0e" }}>
+                            ⚠ Falha ao agendar acesso — contate o suporte
+                          </p>
+                        )
+                      )}
+                      {faceResult.qstashResults?.length === 0 && faceResult.idFaceOk && (
+                        <p className="text-xs" style={{ color: "rgba(26,14,5,0.45)" }}>
+                          ℹ Nenhuma reserva futura encontrada para agendar acesso
                         </p>
                       )}
                     </>

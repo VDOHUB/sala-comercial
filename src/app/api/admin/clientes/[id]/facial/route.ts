@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { loginControlId, createControlIdUser, setControlIdPhoto } from "@/lib/controlid/client";
+import { scheduleGrant, scheduleRevoke, scheduleEndingReminders } from "@/lib/qstash";
 import sharp from "sharp";
 
 // POST /api/admin/clientes/[id]/facial
@@ -67,5 +68,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     idFaceError = err instanceof Error ? err.message : "Erro ao conectar no iDFace.";
   }
 
-  return NextResponse.json({ ok: true, idFaceOk, idFaceError });
+  // ── Agendar acesso no QStash para reservas PAID/PENDING do cliente ──
+  // (necessário quando o checkout foi feito sem câmera e o facial foi
+  //  registrado depois pelo admin)
+  const qstashResults: { bookingId: string; ok: boolean; error?: string }[] = [];
+
+  if (idFaceOk) {
+    const pendingBookings = await prisma.booking.findMany({
+      where: {
+        clientId: id,
+        status:   { in: ["PAID", "PENDING"] },
+        startAt:  { gt: new Date() }, // só reservas futuras
+      },
+    });
+
+    for (const booking of pendingBookings) {
+      try {
+        await scheduleGrant(booking.id, booking.startAt);
+        await scheduleRevoke(booking.id, booking.endAt);
+        await scheduleEndingReminders(booking.id, booking.endAt);
+        console.log(`[admin/facial] QStash agendado para booking ${booking.id}`);
+        qstashResults.push({ bookingId: booking.id, ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[admin/facial] QStash error para booking ${booking.id}:`, msg);
+        qstashResults.push({ bookingId: booking.id, ok: false, error: msg });
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, idFaceOk, idFaceError, qstashResults });
 }
