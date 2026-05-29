@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     const holderInfo = {
       name:              client.name,
       email:             client.email,
-      cpfCnpj:          client.cpf ?? "00000000000",
+      cpfCnpj:          client.cpf ?? undefined,
       phone:             client.phone ?? undefined,
       postalCode:        data.card.postalCode ?? undefined,
       addressNumber:     data.card.addressNumber ?? undefined,

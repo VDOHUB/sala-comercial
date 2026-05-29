@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         creditCardHolderInfo: {
           name:     client.name,
           email:    client.email,
-          cpfCnpj: client.cpf ?? "00000000000",
+          cpfCnpj: client.cpf ?? undefined,
           phone:    client.phone ?? undefined,
         },
       });
