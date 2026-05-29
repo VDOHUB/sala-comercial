@@ -99,29 +99,50 @@ export async function setControlIdPhoto(
   }
 }
 
-// ── Habilitar acesso (begin_time agora, end_time daqui 10 anos) ──
+// ── Adicionar usuário ao grupo de acesso ─────────────────────────
+// group_id 1 = "Padrão" — grupo que tem a regra de acesso ao portal
+export async function addControlIdUserToGroup(
+  session: string,
+  userId: number,
+  groupId = 1
+): Promise<void> {
+  try {
+    await fcgi(session, "create_objects.fcgi", {
+      object: "user_groups",
+      values: [{ user_id: userId, group_id: groupId }],
+    });
+    console.log(`[controlid] user ${userId} added to group ${groupId}`);
+  } catch (err) {
+    // Ignora se já estiver no grupo (duplicate key)
+    console.warn(`[controlid] addToGroup warning (may already be in group):`, err);
+  }
+}
+
+// ── Habilitar acesso: adiciona ao grupo e zera restrição de tempo ─
 export async function enableControlIdUser(
   session: string,
   userId: number
 ): Promise<void> {
-  const now     = Math.floor(Date.now() / 1000);
-  const farFuture = now + 10 * 365 * 24 * 3600; // ~10 anos
+  // Adicionar ao grupo "Padrão" (id:1) — sem isso a fechadura nega acesso
+  await addControlIdUserToGroup(session, userId, 1);
+
+  // begin_time:0 e end_time:0 = sem restrição de tempo (igual aos usuários manuais)
   await fcgi(session, "modify_objects.fcgi", {
     object: "users",
-    values: { begin_time: now, end_time: farFuture },
+    values: { begin_time: 0, end_time: 0 },
     where:  { users: { id: userId } },
   });
 }
 
-// ── Desabilitar acesso (end_time no passado) ──────────────────────
+// ── Desabilitar acesso: seta begin_time=1, end_time=1 (bloqueado) ─
 export async function disableControlIdUser(
   session: string,
   userId: number
 ): Promise<void> {
-  const past = Math.floor(Date.now() / 1000) - 1;
+  // begin_time=1, end_time=1 → janela impossível → acesso negado
   await fcgi(session, "modify_objects.fcgi", {
     object: "users",
-    values: { end_time: past },
+    values: { begin_time: 1, end_time: 1 },
     where:  { users: { id: userId } },
   });
 }
