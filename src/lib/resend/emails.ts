@@ -1,11 +1,16 @@
-import { Resend } from "resend";
+﻿import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Instanciado lazy para nÃ£o quebrar o build quando a env nÃ£o estÃ¡ disponÃ­vel
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 // Remetente com nome exibido: "VDO HUB <noreply@...>"
-const FROM = `VDO HUB <${process.env.EMAIL_FROM}>`;
+function getFrom() {
+  return `VDO HUB <${process.env.EMAIL_FROM}>`;
+}
 
-// ── Template base ─────────────────────────────────────────────────
+// â”€â”€ Template base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailWrapper(content: string) {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -20,7 +25,7 @@ function emailWrapper(content: string) {
           <img src="https://vdohub.viverdeobra.com/logo.png"
             alt="VDO HUB" width="100" height="100"
             style="display:block;margin:0 auto 8px;border-radius:12px;" />
-          <div style="font-size:12px;color:rgba(26,14,5,0.4);margin-top:4px;">Sala Comercial · Anápolis, GO</div>
+          <div style="font-size:12px;color:rgba(26,14,5,0.4);margin-top:4px;">Sala Comercial Â· AnÃ¡polis, GO</div>
         </td></tr>
 
         <!-- Card -->
@@ -32,10 +37,10 @@ function emailWrapper(content: string) {
         <!-- Footer -->
         <tr><td align="center" style="padding-top:24px;">
           <p style="font-size:11px;color:rgba(26,14,5,0.3);margin:0;">
-            VDO HUB · Galeria Nazir, Av. São Francisco de Assis, 181, 2º piso, sala 03 · Anápolis, GO
+            VDO HUB Â· Galeria Nazir, Av. SÃ£o Francisco de Assis, 181, 2Âº piso, sala 03 Â· AnÃ¡polis, GO
           </p>
           <p style="font-size:11px;color:rgba(26,14,5,0.25);margin:6px 0 0;">
-            Dúvidas? WhatsApp (62) 99633-2257
+            DÃºvidas? WhatsApp (62) 99633-2257
           </p>
         </td></tr>
 
@@ -46,7 +51,7 @@ function emailWrapper(content: string) {
 </html>`;
 }
 
-// ── Confirmação de reserva ────────────────────────────────────────
+// â”€â”€ ConfirmaÃ§Ã£o de reserva â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function sendBookingConfirmation(data: {
   to: string;
   clientName: string;
@@ -61,25 +66,25 @@ export async function sendBookingConfirmation(data: {
 
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
-      Reserva confirmada ✓
+      Reserva confirmada âœ“
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.5);">
-      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>! Sua reserva foi registrada com sucesso.
+      OlÃ¡, <strong style="color:#1a0e05;">${data.clientName}</strong>! Sua reserva foi registrada com sucesso.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0"
       style="background:rgba(26,14,5,0.04);border-radius:12px;padding:16px;border:1px solid rgba(26,14,5,0.07);">
       <tr>
         <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
-          📅 Data e horário
+          ðŸ“… Data e horÃ¡rio
         </td>
         <td align="right" style="font-size:13px;font-weight:600;color:#1a0e05;padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
-          ${start} — ${end}
+          ${start} â€” ${end}
         </td>
       </tr>
       <tr>
         <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;">
-          💳 Total cobrado
+          ðŸ’³ Total cobrado
         </td>
         <td align="right" style="font-size:13px;font-weight:700;padding:8px 0;"
           style="color:${isFree ? "#16a34a" : "#1a0e05"};">
@@ -94,30 +99,30 @@ export async function sendBookingConfirmation(data: {
         style="display:block;text-align:center;background:#1a0e05;color:#f5f0e8;
         padding:14px 24px;border-radius:12px;font-size:14px;font-weight:700;
         text-decoration:none;">
-        Realizar pagamento →
+        Realizar pagamento â†’
       </a>
     </div>` : `
     <div style="margin-top:24px;padding:14px;background:rgba(22,163,74,0.08);
       border:1px solid rgba(22,163,74,0.2);border-radius:12px;text-align:center;">
       <span style="font-size:13px;font-weight:600;color:#166534;">
-        ✓ Acesso liberado — apresente seu rosto à fechadura
+        âœ“ Acesso liberado â€” apresente seu rosto Ã  fechadura
       </span>
     </div>`}
 
     <p style="margin:24px 0 0;font-size:12px;color:rgba(26,14,5,0.35);text-align:center;">
-      Seu acesso facial já está cadastrado no sistema.
+      Seu acesso facial jÃ¡ estÃ¡ cadastrado no sistema.
     </p>
   `;
 
-  return resend.emails.send({
-    from:    FROM,
+  return getResend().emails.send({
+    from:    getFrom(),
     to:      data.to,
-    subject: "VDO HUB — Reserva confirmada",
+    subject: "VDO HUB â€” Reserva confirmada",
     html:    emailWrapper(content),
   });
 }
 
-// ── Acesso liberado (webhook pós-pagamento) ───────────────────────
+// â”€â”€ Acesso liberado (webhook pÃ³s-pagamento) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function sendAccessGranted(data: {
   to: string;
   clientName: string;
@@ -129,37 +134,37 @@ export async function sendAccessGranted(data: {
 
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
-      Acesso liberado ✓
+      Acesso liberado âœ“
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.5);">
-      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>! Pagamento confirmado.
+      OlÃ¡, <strong style="color:#1a0e05;">${data.clientName}</strong>! Pagamento confirmado.
     </p>
     <table width="100%" cellpadding="0" cellspacing="0"
       style="background:rgba(26,14,5,0.04);border-radius:12px;padding:16px;border:1px solid rgba(26,14,5,0.07);">
       <tr>
-        <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;">📅 Horário</td>
+        <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;">ðŸ“… HorÃ¡rio</td>
         <td align="right" style="font-size:13px;font-weight:600;color:#1a0e05;padding:8px 0;">
-          ${start} — ${end}
+          ${start} â€” ${end}
         </td>
       </tr>
     </table>
     <div style="margin-top:24px;padding:14px;background:rgba(22,163,74,0.08);
       border:1px solid rgba(22,163,74,0.2);border-radius:12px;text-align:center;">
       <span style="font-size:13px;font-weight:600;color:#166534;">
-        Aproxime seu rosto à fechadura para entrar. Bom trabalho!
+        Aproxime seu rosto Ã  fechadura para entrar. Bom trabalho!
       </span>
     </div>
   `;
 
-  return resend.emails.send({
-    from:    FROM,
+  return getResend().emails.send({
+    from:    getFrom(),
     to:      data.to,
-    subject: "VDO HUB — Seu acesso está liberado",
+    subject: "VDO HUB â€” Seu acesso estÃ¡ liberado",
     html:    emailWrapper(content),
   });
 }
 
-// ── Lembrete 24h antes ────────────────────────────────────────────
+// â”€â”€ Lembrete 24h antes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function sendReminder(data: {
   to: string;
   clientName: string;
@@ -169,26 +174,26 @@ export async function sendReminder(data: {
 
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
-      Lembrete de reserva 🗓
+      Lembrete de reserva ðŸ—“
     </h2>
     <p style="margin:0 0 16px;font-size:14px;color:rgba(26,14,5,0.5);">
-      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>!
+      OlÃ¡, <strong style="color:#1a0e05;">${data.clientName}</strong>!
     </p>
     <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.6);">
-      Sua reserva na VDO HUB está marcada para <strong style="color:#1a0e05;">${start}</strong>.
+      Sua reserva na VDO HUB estÃ¡ marcada para <strong style="color:#1a0e05;">${start}</strong>.
     </p>
-    <p style="margin:0;font-size:13px;color:rgba(26,14,5,0.4);">Até lá! 👋</p>
+    <p style="margin:0;font-size:13px;color:rgba(26,14,5,0.4);">AtÃ© lÃ¡! ðŸ‘‹</p>
   `;
 
-  return resend.emails.send({
-    from:    FROM,
+  return getResend().emails.send({
+    from:    getFrom(),
     to:      data.to,
-    subject: "VDO HUB — Lembrete: sua reserva é amanhã",
+    subject: "VDO HUB â€” Lembrete: sua reserva Ã© amanhÃ£",
     html:    emailWrapper(content),
   });
 }
 
-// ── Aviso de fim de sessão (1h e 30min antes) ────────────────────
+// â”€â”€ Aviso de fim de sessÃ£o (1h e 30min antes) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function sendSessionEndingReminder(data: {
   to: string;
   clientName: string;
@@ -200,35 +205,35 @@ export async function sendSessionEndingReminder(data: {
 
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
-      Sua sessão termina em ${label} ⏱
+      Sua sessÃ£o termina em ${label} â±
     </h2>
     <p style="margin:0 0 20px;font-size:14px;color:rgba(26,14,5,0.5);">
-      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>!
+      OlÃ¡, <strong style="color:#1a0e05;">${data.clientName}</strong>!
     </p>
 
     <div style="background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);border-radius:12px;
       padding:16px;text-align:center;margin-bottom:24px;">
-      <p style="margin:0;font-size:22px;font-weight:800;color:#92400e;">🕐 Encerramento às ${endTime}</p>
+      <p style="margin:0;font-size:22px;font-weight:800;color:#92400e;">ðŸ• Encerramento Ã s ${endTime}</p>
       <p style="margin:6px 0 0;font-size:13px;color:rgba(26,14,5,0.5);">
-        Faltam aproximadamente <strong>${label}</strong> para o fim do seu período.
+        Faltam aproximadamente <strong>${label}</strong> para o fim do seu perÃ­odo.
       </p>
     </div>
 
     <p style="margin:0;font-size:13px;color:rgba(26,14,5,0.5);text-align:center;">
-      Por favor, organize seus pertences e finalize suas atividades com antecedência.<br>
-      Obrigado por usar o VDO HUB! 🙏
+      Por favor, organize seus pertences e finalize suas atividades com antecedÃªncia.<br>
+      Obrigado por usar o VDO HUB! ðŸ™
     </p>
   `;
 
-  return resend.emails.send({
-    from:    FROM,
+  return getResend().emails.send({
+    from:    getFrom(),
     to:      data.to,
-    subject: `VDO HUB — Sua sessão termina em ${label}`,
+    subject: `VDO HUB â€” Sua sessÃ£o termina em ${label}`,
     html:    emailWrapper(content),
   });
 }
 
-// ── Alerta de falha no cadastro facial ───────────────────────────
+// â”€â”€ Alerta de falha no cadastro facial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function sendFacePhotoRetryEmail(data: {
   to: string;
   clientName: string;
@@ -236,23 +241,23 @@ export async function sendFacePhotoRetryEmail(data: {
 }) {
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
-      Atenção: foto não reconhecida ⚠️
+      AtenÃ§Ã£o: foto nÃ£o reconhecida âš ï¸
     </h2>
     <p style="margin:0 0 16px;font-size:14px;color:rgba(26,14,5,0.5);">
-      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>!
+      OlÃ¡, <strong style="color:#1a0e05;">${data.clientName}</strong>!
     </p>
     <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.65);">
-      Não conseguimos validar sua foto no sistema de acesso facial.
-      Para garantir sua entrada na sala, precisamos que você tire uma nova foto seguindo as instruções abaixo:
+      NÃ£o conseguimos validar sua foto no sistema de acesso facial.
+      Para garantir sua entrada na sala, precisamos que vocÃª tire uma nova foto seguindo as instruÃ§Ãµes abaixo:
     </p>
 
     <div style="background:rgba(26,14,5,0.04);border-radius:12px;padding:16px;border:1px solid rgba(26,14,5,0.07);margin-bottom:24px;">
-      <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#1a0e05;">📋 Dicas para uma boa foto:</p>
+      <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#1a0e05;">ðŸ“‹ Dicas para uma boa foto:</p>
       <ul style="margin:0;padding-left:20px;font-size:13px;color:rgba(26,14,5,0.6);line-height:1.8;">
-        <li>Olhe diretamente para a câmera</li>
+        <li>Olhe diretamente para a cÃ¢mera</li>
         <li>Mantenha o rosto centralizado e bem iluminado</li>
-        <li>Não use óculos escuros ou chapéu</li>
-        <li>Evite ambientes muito escuros ou com luz atrás de você</li>
+        <li>NÃ£o use Ã³culos escuros ou chapÃ©u</li>
+        <li>Evite ambientes muito escuros ou com luz atrÃ¡s de vocÃª</li>
       </ul>
     </div>
 
@@ -261,24 +266,24 @@ export async function sendFacePhotoRetryEmail(data: {
         style="display:block;text-align:center;background:#1a0e05;color:#f5f0e8;
         padding:14px 24px;border-radius:12px;font-size:14px;font-weight:700;
         text-decoration:none;">
-        Refazer cadastro facial →
+        Refazer cadastro facial â†’
       </a>
     </div>
 
     <p style="margin:16px 0 0;font-size:11px;color:rgba(26,14,5,0.3);text-align:center;">
-      Este link é pessoal. Não compartilhe com terceiros.
+      Este link Ã© pessoal. NÃ£o compartilhe com terceiros.
     </p>
   `;
 
-  return resend.emails.send({
-    from:    FROM,
+  return getResend().emails.send({
+    from:    getFrom(),
     to:      data.to,
-    subject: "VDO HUB — Atualize seu cadastro facial",
+    subject: "VDO HUB â€” Atualize seu cadastro facial",
     html:    emailWrapper(content),
   });
 }
 
-// ── Confirmação de assinatura (planos multi-período) ──────────────
+// â”€â”€ ConfirmaÃ§Ã£o de assinatura (planos multi-perÃ­odo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function sendSubscriptionConfirmation(data: {
   to: string;
   clientName: string;
@@ -291,17 +296,17 @@ export async function sendSubscriptionConfirmation(data: {
 
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a0e05;">
-      Assinatura ativada ✓
+      Assinatura ativada âœ“
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:rgba(26,14,5,0.5);">
-      Olá, <strong style="color:#1a0e05;">${data.clientName}</strong>! Seu plano foi ativado com sucesso.
+      OlÃ¡, <strong style="color:#1a0e05;">${data.clientName}</strong>! Seu plano foi ativado com sucesso.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0"
       style="background:rgba(26,14,5,0.04);border-radius:12px;padding:16px;border:1px solid rgba(26,14,5,0.07);">
       <tr>
         <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
-          📋 Plano
+          ðŸ“‹ Plano
         </td>
         <td align="right" style="font-size:13px;font-weight:600;color:#1a0e05;padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
           ${data.planLabel}
@@ -309,15 +314,15 @@ export async function sendSubscriptionConfirmation(data: {
       </tr>
       <tr>
         <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
-          🎯 Períodos disponíveis
+          ðŸŽ¯ PerÃ­odos disponÃ­veis
         </td>
         <td align="right" style="font-size:13px;font-weight:700;color:#1a0e05;padding:8px 0;border-bottom:1px solid rgba(26,14,5,0.06);">
-          ${data.totalCredits} períodos
+          ${data.totalCredits} perÃ­odos
         </td>
       </tr>
       <tr>
         <td style="font-size:12px;color:rgba(26,14,5,0.4);padding:8px 0;">
-          📅 Válido até
+          ðŸ“… VÃ¡lido atÃ©
         </td>
         <td align="right" style="font-size:13px;font-weight:600;color:#1a0e05;padding:8px 0;">
           ${expiry}
@@ -330,19 +335,19 @@ export async function sendSubscriptionConfirmation(data: {
         style="display:block;text-align:center;background:#1a0e05;color:#f5f0e8;
         padding:14px 24px;border-radius:12px;font-size:14px;font-weight:700;
         text-decoration:none;">
-        Agendar meus períodos →
+        Agendar meus perÃ­odos â†’
       </a>
     </div>
 
     <p style="margin:16px 0 0;font-size:12px;color:rgba(26,14,5,0.35);text-align:center;">
-      Use este link sempre que quiser agendar um novo período. Guarde-o com segurança.
+      Use este link sempre que quiser agendar um novo perÃ­odo. Guarde-o com seguranÃ§a.
     </p>
   `;
 
-  return resend.emails.send({
-    from:    FROM,
+  return getResend().emails.send({
+    from:    getFrom(),
     to:      data.to,
-    subject: `VDO HUB — ${data.planLabel} ativado · ${data.totalCredits} períodos disponíveis`,
+    subject: `VDO HUB â€” ${data.planLabel} ativado Â· ${data.totalCredits} perÃ­odos disponÃ­veis`,
     html:    emailWrapper(content),
   });
 }
