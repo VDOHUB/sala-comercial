@@ -1,17 +1,17 @@
 ﻿import { Resend } from "resend";
 
-// Instanciado lazy para nÃ£o quebrar o build quando a env nÃ£o estÃ¡ disponÃ­vel
-function getResend() {
+// Instanciado lazy para não quebrar o build quando a env não está disponível
+export function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
 // Remetente com nome exibido: "VDO HUB <noreply@...>"
-function getFrom() {
+export function getFrom() {
   return `VDO HUB <${process.env.EMAIL_FROM}>`;
 }
 
 // â”€â”€ Template base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function emailWrapper(content: string) {
+export function emailWrapper(content: string) {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -347,7 +347,8 @@ export async function sendSubscriptionConfirmation(data: {
   return getResend().emails.send({
     from:    getFrom(),
     to:      data.to,
-    subject: `VDO HUB â€” ${data.planLabel} ativado Â· ${data.totalCredits} perÃ­odos disponÃ­veis`,
+    subject: `VDO HUB — ${data.planLabel} ativado · ${data.totalCredits} períodos disponíveis`,
     html:    emailWrapper(content),
   });
 }
+

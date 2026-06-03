@@ -232,6 +232,13 @@ export function BookingSection() {
     if (!isMultiPeriod && (!selectedDate || !period)) return;
     setLoading(true); setError("");
 
+    // Registrar aceite dos termos
+    fetch("/api/terms-acceptance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientName: form.name, clientEmail: form.email, clientPhone: form.phone }),
+    }).catch(() => {});
+
     const body: Record<string, unknown> = {
       ...form,
       planKey:          selectedPlan,
@@ -779,11 +786,11 @@ export function BookingSection() {
                     )}
                   </button>
                   <p className="text-xs leading-relaxed" style={{ color: "rgba(215,203,181,0.45)" }}>
-                    Li e aceito os{" "}
+                    Li e concordo com os{" "}
                     <a href="/termos" target="_blank" rel="noopener noreferrer"
                       className="font-semibold hover:underline"
                       style={{ color: "rgba(215,203,181,0.7)" }}>
-                      Termos de Uso
+                      termos de uso
                     </a>{" "}
                     do VDO HUB.
                   </p>

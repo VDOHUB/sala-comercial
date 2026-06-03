@@ -27,8 +27,12 @@ Os dados pessoais (incluindo foto facial) são utilizados exclusivamente para co
 Estes termos são válidos a partir da realização da reserva e se aplicam a todas as utilizações do espaço.`;
 
 export default async function TermosPage() {
-  const setting = await prisma.setting.findUnique({ where: { key: "terms" } });
-  const content = setting?.value || DEFAULT_TERMS;
+  const [setting, attachSetting] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: "terms" } }),
+    prisma.setting.findUnique({ where: { key: "terms_attachment" } }),
+  ]);
+  const content    = setting?.value || DEFAULT_TERMS;
+  const attachment = attachSetting?.value || null; // base64 ou URL
 
   // Convert markdown-like bold (**text**) to HTML
   const html = content
@@ -62,6 +66,32 @@ export default async function TermosPage() {
           style={{ color: "rgba(26,14,5,0.7)" }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
+
+        {/* Anexo dos termos */}
+        {attachment && (
+          <div className="mt-10 pt-8" style={{ borderTop: "1px solid rgba(26,14,5,0.1)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(26,14,5,0.4)" }}>
+              Documento anexo
+            </p>
+            {attachment.startsWith("data:application/pdf") ? (
+              <a
+                href={attachment}
+                download="termos-vdo-hub.pdf"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }}>
+                📄 Baixar PDF dos termos
+              </a>
+            ) : attachment.startsWith("data:image") ? (
+              <img src={attachment} alt="Anexo dos termos" className="rounded-xl max-w-full" />
+            ) : (
+              <a href={attachment} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05" }}>
+                📎 Ver documento anexo
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

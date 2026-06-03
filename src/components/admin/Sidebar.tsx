@@ -13,9 +13,11 @@ const nav = [
   { href: "/admin/vouchers",      label: "Vouchers"      },
   { href: "/admin/planos",        label: "Planos"        },
   { href: "/admin/cobrancas",     label: "Cobranças"     },
-  { href: "/admin/insumos",       label: "Insumos"       },
-  { href: "/admin/acessos",       label: "Acessos"       },
-  { href: "/admin/configuracoes", label: "Configurações" },
+  { href: "/admin/insumos",         label: "Insumos"         },
+  { href: "/admin/acessos",         label: "Acessos"         },
+  { href: "/admin/cancelamentos",   label: "Cancelamentos"   },
+  { href: "/admin/termos-aceites",  label: "Aceites"         },
+  { href: "/admin/configuracoes",   label: "Configurações"   },
 ];
 
 export function Sidebar() {

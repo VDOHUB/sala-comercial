@@ -13,10 +13,16 @@ type Consumable = {
   margin: number | null; lowStock: boolean; createdAt: string;
 };
 
+type FurnitureItem = {
+  id: string; code: string | null; name: string; value: number; description: string | null; active: boolean; createdAt: string;
+};
+
 const EMPTY_FORM = {
   name: "", code: "", unit: "", price: "", costPrice: "", description: "",
   photo: "", stockDeposito: "", stockFrigobar: "", minStock: "2",
 };
+
+const EMPTY_FURNITURE = { name: "", code: "", value: "", description: "" };
 
 const UNITS = ["LATA", "GARRAFA", "CÁPSULA", "SACHÊ", "UN", "KG", "L", "PCT"];
 
@@ -26,12 +32,61 @@ export default function InsumosPage() {
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
   const [editing, setEditing]   = useState<string | null>(null);
-  const [tab, setTab]           = useState<"itens" | "vendas">("itens");
+  const [tab, setTab]           = useState<"itens" | "vendas" | "patrimonio">("itens");
   const [abastecerId, setAbastecerId] = useState<string | null>(null);
   const [abastecerQty, setAbastecerQty] = useState("");
   const [abastecerLoading, setAbastecerLoading] = useState(false);
   const [abastecerError, setAbastecerError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Patrimônio
+  const [furniture, setFurniture]         = useState<FurnitureItem[]>([]);
+  const [furnitureLoading, setFurnitureLoading] = useState(false);
+  const [furnitureForm, setFurnitureForm] = useState(EMPTY_FURNITURE);
+  const [furnitureSaving, setFurnitureSaving] = useState(false);
+  const [editingFurniture, setEditingFurniture] = useState<string | null>(null);
+
+  function loadFurniture() {
+    setFurnitureLoading(true);
+    fetch("/api/admin/furniture").then((r) => r.json()).then((d) => { setFurniture(d); setFurnitureLoading(false); });
+  }
+
+  useEffect(() => { if (tab === "patrimonio") loadFurniture(); }, [tab]);
+
+  async function handleFurnitureSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!furnitureForm.name) return;
+    setFurnitureSaving(true);
+    await fetch("/api/admin/furniture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id:          editingFurniture ?? undefined,
+        name:        furnitureForm.name,
+        code:        furnitureForm.code || null,
+        value:       Number(furnitureForm.value) || 0,
+        description: furnitureForm.description || null,
+      }),
+    });
+    setFurnitureSaving(false);
+    setFurnitureForm(EMPTY_FURNITURE);
+    setEditingFurniture(null);
+    loadFurniture();
+  }
+
+  async function deleteFurniture(id: string) {
+    if (!confirm("Excluir este item?")) return;
+    await fetch(`/api/admin/furniture/${id}`, { method: "DELETE" });
+    loadFurniture();
+  }
+
+  function editFurniture(item: FurnitureItem) {
+    setEditingFurniture(item.id);
+    setFurnitureForm({ name: item.name, code: item.code ?? "", value: String(item.value), description: item.description ?? "" });
+    setTab("patrimonio");
+  }
+
+  const totalPatrimonio = furniture.reduce((s, f) => s + f.value, 0);
 
   function load() {
     setLoading(true);
@@ -169,11 +224,11 @@ export default function InsumosPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 p-1 rounded-xl w-fit" style={{ background: "rgba(26,14,5,0.06)" }}>
-        {(["itens", "vendas"] as const).map((t) => (
+        {(["itens", "vendas", "patrimonio"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className="px-5 py-2 rounded-lg text-sm font-semibold transition-all"
             style={tab === t ? { background: "#1a0e05", color: "#f5f0e8" } : { color: "rgba(26,14,5,0.5)" }}>
-            {t === "itens" ? "Itens" : "Histórico de vendas"}
+            {t === "itens" ? "Insumos" : t === "vendas" ? "Histórico de vendas" : "Patrimônio"}
           </button>
         ))}
       </div>
@@ -553,6 +608,130 @@ export default function InsumosPage() {
                 </table>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* ══ ABA PATRIMÔNIO ══════════════════════════════════════════════ */}
+      {tab === "patrimonio" && (
+        <div>
+          {/* Formulário */}
+          <form onSubmit={handleFurnitureSave}
+            className="rounded-2xl p-6 mb-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+            <h3 className="font-semibold mb-4" style={{ color: "#1a0e05" }}>
+              {editingFurniture ? "Editar item" : "Adicionar item de patrimônio"}
+            </h3>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: "rgba(26,14,5,0.5)" }}>Código</label>
+                <input value={furnitureForm.code}
+                  onChange={(e) => setFurnitureForm((f) => ({ ...f, code: e.target.value }))}
+                  placeholder="M001"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ background: "#fff", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: "rgba(26,14,5,0.5)" }}>Valor R$</label>
+                <input value={furnitureForm.value} type="number" step="0.01" min="0"
+                  onChange={(e) => setFurnitureForm((f) => ({ ...f, value: e.target.value }))}
+                  placeholder="0,00"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ background: "#fff", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold mb-1" style={{ color: "rgba(26,14,5,0.5)" }}>Descrição / Nome *</label>
+              <input value={furnitureForm.name} required
+                onChange={(e) => setFurnitureForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Mesa de reunião, Cadeira executiva..."
+                className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                style={{ background: "#fff", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold mb-1" style={{ color: "rgba(26,14,5,0.5)" }}>Observação</label>
+              <input value={furnitureForm.description}
+                onChange={(e) => setFurnitureForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Estado de conservação, local, etc."
+                className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                style={{ background: "#fff", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+            </div>
+            <div className="flex gap-3">
+              {editingFurniture && (
+                <button type="button" onClick={() => { setEditingFurniture(null); setFurnitureForm(EMPTY_FURNITURE); }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold"
+                  style={{ background: "rgba(26,14,5,0.07)", color: "rgba(26,14,5,0.55)" }}>
+                  Cancelar
+                </button>
+              )}
+              <button type="submit" disabled={furnitureSaving}
+                className="px-6 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+                style={{ background: "#1a0e05", color: "#f5f0e8" }}>
+                {furnitureSaving ? "Salvando..." : editingFurniture ? "Salvar alterações" : "Adicionar item"}
+              </button>
+            </div>
+          </form>
+
+          {/* Resumo */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="rounded-2xl p-5" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "rgba(26,14,5,0.4)" }}>Itens cadastrados</p>
+              <p className="text-2xl font-bold" style={{ color: "#1a0e05" }}>{furniture.length}</p>
+            </div>
+            <div className="rounded-2xl p-5" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "rgba(26,14,5,0.4)" }}>Valor total estimado</p>
+              <p className="text-2xl font-bold" style={{ color: "#1a0e05" }}>
+                R${totalPatrimonio.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
+
+          {/* Tabela */}
+          {furnitureLoading ? (
+            <p className="text-sm" style={{ color: "rgba(26,14,5,0.4)" }}>Carregando...</p>
+          ) : furniture.length === 0 ? (
+            <div className="text-center py-12" style={{ color: "rgba(26,14,5,0.35)" }}>
+              <p className="font-medium mb-1" style={{ color: "#1a0e05" }}>Nenhum item cadastrado</p>
+              <p className="text-sm">Adicione móveis e patrimônio acima.</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl overflow-hidden" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(26,14,5,0.07)" }}>
+                    {["Código", "Descrição", "Valor R$", "Observação", ""].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                        style={{ color: "rgba(26,14,5,0.35)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {furniture.map((item, i) => (
+                    <tr key={item.id} style={{ borderTop: i > 0 ? "1px solid rgba(26,14,5,0.05)" : undefined }}>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ color: "rgba(26,14,5,0.5)" }}>{item.code ?? "—"}</td>
+                      <td className="px-4 py-3 font-semibold" style={{ color: "#1a0e05" }}>{item.name}</td>
+                      <td className="px-4 py-3 font-bold" style={{ color: "#1a0e05" }}>
+                        {item.value > 0 ? `R$${item.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs max-w-xs truncate" style={{ color: "rgba(26,14,5,0.5)" }}>{item.description ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2 justify-end">
+                          <button onClick={() => editFurniture(item)}
+                            className="text-xs px-2.5 py-1 rounded-lg"
+                            style={{ background: "rgba(26,14,5,0.07)", color: "rgba(26,14,5,0.55)" }}>
+                            ✏️
+                          </button>
+                          <button onClick={() => deleteFurniture(item.id)}
+                            className="text-xs px-2.5 py-1 rounded-lg"
+                            style={{ background: "rgba(220,38,38,0.08)", color: "#dc2626" }}>
+                            🗑
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

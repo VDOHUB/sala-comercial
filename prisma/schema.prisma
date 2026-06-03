@@ -210,3 +210,44 @@ model Admin {
 
   @@map("admins")
 }
+
+// ── Aceites dos termos de uso ─────────────────────────────────────
+model TermsAcceptance {
+  id          String   @id @default(cuid())
+  clientName  String
+  clientEmail String
+  clientPhone String?
+  ipAddress   String?
+  userAgent   String?
+  acceptedAt  DateTime @default(now())
+
+  @@map("terms_acceptances")
+}
+
+// ── Solicitações de cancelamento ──────────────────────────────────
+model CancellationRequest {
+  id          String    @id @default(cuid())
+  clientName  String
+  clientEmail String
+  clientPhone String?
+  reason      String?
+  status      String    @default("PENDING") // PENDING | HANDLED
+  handledAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("cancellation_requests")
+}
+
+// ── Patrimônio / Móveis ───────────────────────────────────────────
+model FurnitureItem {
+  id          String   @id @default(cuid())
+  code        String?
+  name        String
+  value       Float    @default(0)
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("furniture_items")
+}

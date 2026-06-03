@@ -142,6 +142,18 @@ export function Footer() {
           style={{ borderTop: "1px solid rgba(215,203,181,0.05)", color: "rgba(215,203,181,0.18)" }}
         >
           <p>© {new Date().getFullYear()} VDO HUB. Todos os direitos reservados.</p>
+          <div className="flex items-center gap-4">
+            <motion.a href="/termos" target="_blank"
+              className="transition-colors" style={{ color: "rgba(215,203,181,0.22)" }}
+              whileHover={{ color: "rgba(215,203,181,0.5)" }}>
+              Termos de uso
+            </motion.a>
+            <motion.a href="/cancelar"
+              className="transition-colors" style={{ color: "rgba(215,203,181,0.22)" }}
+              whileHover={{ color: "rgba(215,203,181,0.5)" }}>
+              Solicitar cancelamento
+            </motion.a>
+          </div>
         </div>
       </div>
     </footer>

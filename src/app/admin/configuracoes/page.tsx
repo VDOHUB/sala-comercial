@@ -1,17 +1,33 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type FaqItem = { id: string; question: string; answer: string; order: number };
 
 export default function ConfiguracoesPage() {
-  const [terms, setTerms] = useState("");
-  const [termsSaved, setTermsSaved] = useState(false);
-  const [termsSaving, setTermsSaving] = useState(false);
+  const [terms, setTerms]               = useState("");
+  const [termsSaved, setTermsSaved]     = useState(false);
+  const [termsSaving, setTermsSaving]   = useState(false);
+  const [termsAttachment, setTermsAttachment] = useState("");
+  const [attachSaved, setAttachSaved]   = useState(false);
+  const attachRef                       = useRef<HTMLInputElement>(null);
+
+  // FAQ
+  const [faq, setFaq]               = useState<FaqItem[]>([]);
+  const [faqSaved, setFaqSaved]     = useState(false);
+  const [faqSaving, setFaqSaving]   = useState(false);
+  const [newQ, setNewQ]             = useState("");
+  const [newA, setNewA]             = useState("");
 
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((r) => r.json())
       .then((data) => {
-        if (data.terms) setTerms(data.terms);
+        if (data.terms)            setTerms(data.terms);
+        if (data.terms_attachment) setTermsAttachment(data.terms_attachment);
       });
+    fetch("/api/admin/faq")
+      .then((r) => r.json())
+      .then((data: FaqItem[]) => { if (Array.isArray(data)) setFaq(data); });
   }, []);
 
   async function saveTerms() {
@@ -19,11 +35,64 @@ export default function ConfiguracoesPage() {
     await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ terms }),
+      body: JSON.stringify({ terms, terms_attachment: termsAttachment }),
     });
     setTermsSaving(false);
     setTermsSaved(true);
     setTimeout(() => setTermsSaved(false), 3000);
+  }
+
+  function handleAttachFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setTermsAttachment(ev.target?.result as string);
+      setAttachSaved(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // FAQ helpers
+  function addFaqItem() {
+    if (!newQ.trim() || !newA.trim()) return;
+    const item: FaqItem = {
+      id:       Date.now().toString(),
+      question: newQ.trim(),
+      answer:   newA.trim(),
+      order:    faq.length,
+    };
+    setFaq((prev) => [...prev, item]);
+    setNewQ(""); setNewA("");
+    setFaqSaved(false);
+  }
+
+  function removeFaqItem(id: string) {
+    setFaq((prev) => prev.filter((f) => f.id !== id).map((f, i) => ({ ...f, order: i })));
+    setFaqSaved(false);
+  }
+
+  function moveFaqItem(id: string, dir: -1 | 1) {
+    setFaq((prev) => {
+      const idx = prev.findIndex((f) => f.id === id);
+      if (idx + dir < 0 || idx + dir >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[idx + dir]] = [next[idx + dir], next[idx]];
+      return next.map((f, i) => ({ ...f, order: i }));
+    });
+    setFaqSaved(false);
+  }
+
+  async function saveFaq() {
+    setFaqSaving(true);
+    await fetch("/api/admin/faq", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(faq),
+    });
+    setFaqSaving(false);
+    setFaqSaved(true);
+    setTimeout(() => setFaqSaved(false), 3000);
   }
 
   return (
@@ -78,14 +147,16 @@ export default function ConfiguracoesPage() {
         <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
           <div className="flex items-start justify-between mb-1">
             <h2 className="font-semibold" style={{ color: "#1a0e05" }}>Termos de uso</h2>
-            <a
-              href="/termos"
-              target="_blank"
-              className="text-xs font-medium hover:underline"
-              style={{ color: "rgba(26,14,5,0.45)" }}
-            >
-              Ver página pública →
-            </a>
+            <div className="flex items-center gap-3">
+              <a href="/admin/termos-aceites" className="text-xs font-medium hover:underline"
+                style={{ color: "rgba(26,14,5,0.45)" }}>
+                📋 Ver aceites →
+              </a>
+              <a href="/termos" target="_blank" className="text-xs font-medium hover:underline"
+                style={{ color: "rgba(26,14,5,0.45)" }}>
+                Ver página pública →
+              </a>
+            </div>
           </div>
           <p className="text-sm mb-4" style={{ color: "rgba(26,14,5,0.4)" }}>
             Texto exibido na página /termos e exigido na finalização do pedido.
@@ -103,7 +174,37 @@ export default function ConfiguracoesPage() {
               color: "#1a0e05",
             }}
           />
-          <div className="flex items-center justify-between mt-3">
+
+          {/* Anexo PDF */}
+          <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(26,14,5,0.08)" }}>
+            <p className="text-sm font-medium mb-2" style={{ color: "#1a0e05" }}>Anexo dos termos (PDF ou imagem)</p>
+            <p className="text-xs mb-3" style={{ color: "rgba(26,14,5,0.4)" }}>
+              Será exibido como link/download ao final da página de termos.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => attachRef.current?.click()}
+                className="px-4 py-2 rounded-xl text-sm font-medium"
+                style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.12)" }}>
+                📎 Selecionar arquivo
+              </button>
+              <input ref={attachRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleAttachFile} />
+              {termsAttachment && (
+                <span className="text-xs font-medium" style={{ color: "#166534" }}>
+                  ✓ Arquivo carregado
+                </span>
+              )}
+              {termsAttachment && (
+                <button type="button" onClick={() => { setTermsAttachment(""); setAttachSaved(false); }}
+                  className="text-xs" style={{ color: "rgba(26,14,5,0.4)" }}>
+                  ✕ Remover
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
             {termsSaved ? (
               <span className="text-xs font-medium" style={{ color: "#166534" }}>✓ Termos salvos</span>
             ) : <span />}
@@ -111,9 +212,89 @@ export default function ConfiguracoesPage() {
               onClick={saveTerms}
               disabled={termsSaving}
               className="px-5 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
-              style={{ background: "#1a0e05", color: "#f5f0e8" }}
-            >
+              style={{ background: "#1a0e05", color: "#f5f0e8" }}>
               {termsSaving ? "Salvando..." : "Salvar termos"}
+            </button>
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="rounded-2xl p-6" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.08)" }}>
+          <div className="flex items-start justify-between mb-1">
+            <h2 className="font-semibold" style={{ color: "#1a0e05" }}>Dúvidas Frequentes (FAQ)</h2>
+            <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
+              style={{ background: "rgba(26,14,5,0.07)", color: "rgba(26,14,5,0.5)" }}>
+              {faq.length} perguntas
+            </span>
+          </div>
+          <p className="text-sm mb-5" style={{ color: "rgba(26,14,5,0.4)" }}>
+            Exibidas na seção "Dúvidas Frequentes" do site, após o Como Funciona.
+          </p>
+
+          {/* Lista atual */}
+          <div className="space-y-2 mb-5">
+            {faq.map((item, idx) => (
+              <div key={item.id} className="rounded-xl p-4" style={{ background: "rgba(26,14,5,0.04)", border: "1px solid rgba(26,14,5,0.06)" }}>
+                <div className="flex items-start gap-3">
+                  <div className="flex flex-col gap-1 pt-0.5">
+                    <button type="button" onClick={() => moveFaqItem(item.id, -1)} disabled={idx === 0}
+                      className="text-xs disabled:opacity-30" style={{ color: "rgba(26,14,5,0.5)" }}>▲</button>
+                    <button type="button" onClick={() => moveFaqItem(item.id, 1)} disabled={idx === faq.length - 1}
+                      className="text-xs disabled:opacity-30" style={{ color: "rgba(26,14,5,0.5)" }}>▼</button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold mb-0.5" style={{ color: "#1a0e05" }}>{item.question}</p>
+                    <p className="text-xs" style={{ color: "rgba(26,14,5,0.5)" }}>{item.answer}</p>
+                  </div>
+                  <button type="button" onClick={() => removeFaqItem(item.id)}
+                    className="text-sm px-2 py-1 rounded-lg flex-shrink-0"
+                    style={{ background: "rgba(220,38,38,0.08)", color: "#dc2626" }}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))}
+            {faq.length === 0 && (
+              <p className="text-sm text-center py-4" style={{ color: "rgba(26,14,5,0.3)" }}>
+                Nenhuma pergunta adicionada ainda.
+              </p>
+            )}
+          </div>
+
+          {/* Adicionar nova */}
+          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(26,14,5,0.04)", border: "1px solid rgba(26,14,5,0.08)" }}>
+            <p className="text-xs font-semibold" style={{ color: "rgba(26,14,5,0.5)" }}>ADICIONAR PERGUNTA</p>
+            <input
+              value={newQ}
+              onChange={(e) => setNewQ(e.target.value)}
+              placeholder="Qual a pergunta?"
+              className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+              style={{ background: "#fff", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }}
+            />
+            <textarea
+              value={newA}
+              onChange={(e) => setNewA(e.target.value)}
+              placeholder="Qual é a resposta?"
+              rows={3}
+              className="w-full rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none"
+              style={{ background: "#fff", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }}
+            />
+            <button type="button" onClick={addFaqItem}
+              disabled={!newQ.trim() || !newA.trim()}
+              className="w-full py-2 rounded-xl text-sm font-semibold disabled:opacity-40"
+              style={{ background: "rgba(26,14,5,0.08)", color: "#1a0e05" }}>
+              + Adicionar pergunta
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
+            {faqSaved ? (
+              <span className="text-xs font-medium" style={{ color: "#166534" }}>✓ FAQ salvo</span>
+            ) : <span />}
+            <button onClick={saveFaq} disabled={faqSaving}
+              className="px-5 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "#1a0e05", color: "#f5f0e8" }}>
+              {faqSaving ? "Salvando..." : "Salvar FAQ"}
             </button>
           </div>
         </div>
@@ -156,6 +337,7 @@ export default function ConfiguracoesPage() {
           </div>
           <p className="text-xs mt-2" style={{ color: "rgba(26,14,5,0.35)" }}>Edite o script com a nova senha antes de rodar.</p>
         </div>
+
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createAsaasCustomer, updateAsaasCustomer, createAsaasCharge, tokenizeAsaasCard } from "@/lib/asaas/client";
-import { sendBookingConfirmation, sendSubscriptionConfirmation } from "@/lib/resend/emails";
+import { sendSubscriptionConfirmation } from "@/lib/resend/emails";
+import { sendBookingConfirmationWithPhoto } from "@/lib/resend/notifications";
 import { z } from "zod";
 import { format, addDays, addMonths } from "date-fns";
 
@@ -263,6 +264,18 @@ export async function POST(req: NextRequest) {
   if (voucherId) {
     await prisma.voucher.update({ where: { id: voucherId }, data: { usedCount: { increment: 1 } } });
   }
+
+  // Enviar e-mail de confirmação de reserva
+  const roomPhotoUrl = process.env.ROOM_PHOTO_URL ?? undefined;
+  sendBookingConfirmationWithPhoto({
+    to:          client.email,
+    clientName:  client.name,
+    startAt:     booking.startAt,
+    endAt:       booking.endAt,
+    totalAmount: booking.totalAmount,
+    paymentUrl:  booking.asaasPaymentUrl ?? undefined,
+    roomPhotoUrl,
+  }).catch((e) => console.warn("[bookings] email confirmation failed:", e));
 
   return NextResponse.json({
     bookingId:     booking.id,
