@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type TermsAttachment = { id: string; name: string; data: string };
 
 const DEFAULT_TERMS = `**TERMOS DE USO — VDO HUB**

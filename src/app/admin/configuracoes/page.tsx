@@ -34,14 +34,22 @@ export default function ConfiguracoesPage() {
 
   async function saveTerms() {
     setTermsSaving(true);
-    await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ terms, terms_attachments: JSON.stringify(attachments) }),
-    });
-    setTermsSaving(false);
-    setTermsSaved(true);
-    setTimeout(() => setTermsSaved(false), 3000);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ terms, terms_attachments: JSON.stringify(attachments) }),
+      });
+      const data = await res.json();
+      console.log("[saveTerms] response:", data, "attachments count:", attachments.length);
+      setTermsSaved(true);
+      setTimeout(() => setTermsSaved(false), 3000);
+    } catch (err) {
+      console.error("[saveTerms] error:", err);
+      alert("Erro ao salvar. Verifique o console.");
+    } finally {
+      setTermsSaving(false);
+    }
   }
 
   function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
