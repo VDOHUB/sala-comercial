@@ -2,13 +2,13 @@
 import { useEffect, useRef, useState } from "react";
 
 type FaqItem = { id: string; question: string; answer: string; order: number };
+type TermsAttachment = { id: string; name: string; data: string };
 
 export default function ConfiguracoesPage() {
   const [terms, setTerms]               = useState("");
   const [termsSaved, setTermsSaved]     = useState(false);
   const [termsSaving, setTermsSaving]   = useState(false);
-  const [termsAttachment, setTermsAttachment] = useState("");
-  const [attachSaved, setAttachSaved]   = useState(false);
+  const [attachments, setAttachments]   = useState<TermsAttachment[]>([]);
   const attachRef                       = useRef<HTMLInputElement>(null);
 
   // FAQ
@@ -22,8 +22,10 @@ export default function ConfiguracoesPage() {
     fetch("/api/admin/settings")
       .then((r) => r.json())
       .then((data) => {
-        if (data.terms)            setTerms(data.terms);
-        if (data.terms_attachment) setTermsAttachment(data.terms_attachment);
+        if (data.terms) setTerms(data.terms);
+        if (data.terms_attachments) {
+          try { setAttachments(JSON.parse(data.terms_attachments)); } catch { setAttachments([]); }
+        }
       });
     fetch("/api/admin/faq")
       .then((r) => r.json())
@@ -35,22 +37,33 @@ export default function ConfiguracoesPage() {
     await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ terms, terms_attachment: termsAttachment }),
+      body: JSON.stringify({ terms, terms_attachments: JSON.stringify(attachments) }),
     });
     setTermsSaving(false);
     setTermsSaved(true);
     setTimeout(() => setTermsSaved(false), 3000);
   }
 
-  function handleAttachFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setTermsAttachment(ev.target?.result as string);
-      setAttachSaved(false);
-    };
-    reader.readAsDataURL(file);
+  function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const data = ev.target?.result as string;
+        setAttachments((prev) => [
+          ...prev,
+          { id: Date.now().toString() + Math.random(), name: file.name, data },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    // reset input so same file can be added again if needed
+    e.target.value = "";
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
   }
 
   // FAQ helpers
@@ -175,33 +188,43 @@ export default function ConfiguracoesPage() {
             }}
           />
 
-          {/* Anexo PDF */}
+          {/* Anexos */}
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(26,14,5,0.08)" }}>
-            <p className="text-sm font-medium mb-2" style={{ color: "#1a0e05" }}>Anexo dos termos (PDF ou imagem)</p>
+            <p className="text-sm font-medium mb-1" style={{ color: "#1a0e05" }}>Anexos dos termos</p>
             <p className="text-xs mb-3" style={{ color: "rgba(26,14,5,0.4)" }}>
-              Será exibido como link/download ao final da página de termos.
+              PDFs ou imagens exibidos como links de download no rodapé da página de termos. Pode adicionar vários.
             </p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => attachRef.current?.click()}
-                className="px-4 py-2 rounded-xl text-sm font-medium"
-                style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.12)" }}>
-                📎 Selecionar arquivo
-              </button>
-              <input ref={attachRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleAttachFile} />
-              {termsAttachment && (
-                <span className="text-xs font-medium" style={{ color: "#166534" }}>
-                  ✓ Arquivo carregado
-                </span>
-              )}
-              {termsAttachment && (
-                <button type="button" onClick={() => { setTermsAttachment(""); setAttachSaved(false); }}
-                  className="text-xs" style={{ color: "rgba(26,14,5,0.4)" }}>
-                  ✕ Remover
-                </button>
-              )}
-            </div>
+
+            {/* Lista de arquivos já adicionados */}
+            {attachments.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {attachments.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl"
+                    style={{ background: "rgba(26,14,5,0.04)", border: "1px solid rgba(26,14,5,0.08)" }}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm">
+                        {a.data.startsWith("data:application/pdf") ? "📄" : "🖼"}
+                      </span>
+                      <span className="text-xs font-medium truncate" style={{ color: "#1a0e05" }}>{a.name}</span>
+                    </div>
+                    <button type="button" onClick={() => removeAttachment(a.id)}
+                      className="text-xs flex-shrink-0 px-2 py-1 rounded-lg"
+                      style={{ background: "rgba(220,38,38,0.07)", color: "#dc2626" }}>
+                      ✕ Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => attachRef.current?.click()}
+              className="px-4 py-2 rounded-xl text-sm font-medium"
+              style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.12)" }}>
+              📎 Adicionar arquivo(s)
+            </button>
+            <input ref={attachRef} type="file" accept=".pdf,.jpg,.jpeg,.png" multiple className="hidden" onChange={handleAttachFiles} />
           </div>
 
           <div className="flex items-center justify-between mt-4">

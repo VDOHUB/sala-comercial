@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
+type TermsAttachment = { id: string; name: string; data: string };
+
 const DEFAULT_TERMS = `**TERMOS DE USO — VDO HUB**
 
 **1. Objeto**
@@ -29,10 +31,14 @@ Estes termos são válidos a partir da realização da reserva e se aplicam a to
 export default async function TermosPage() {
   const [setting, attachSetting] = await Promise.all([
     prisma.setting.findUnique({ where: { key: "terms" } }),
-    prisma.setting.findUnique({ where: { key: "terms_attachment" } }),
+    prisma.setting.findUnique({ where: { key: "terms_attachments" } }),
   ]);
-  const content    = setting?.value || DEFAULT_TERMS;
-  const attachment = attachSetting?.value || null; // base64 ou URL
+
+  const content = setting?.value || DEFAULT_TERMS;
+  let attachments: TermsAttachment[] = [];
+  if (attachSetting?.value) {
+    try { attachments = JSON.parse(attachSetting.value) as TermsAttachment[]; } catch { /* noop */ }
+  }
 
   // Convert markdown-like bold (**text**) to HTML
   const html = content
@@ -67,29 +73,38 @@ export default async function TermosPage() {
           dangerouslySetInnerHTML={{ __html: html }}
         />
 
-        {/* Anexo dos termos */}
-        {attachment && (
-          <div className="mt-10 pt-8" style={{ borderTop: "1px solid rgba(26,14,5,0.1)" }}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(26,14,5,0.4)" }}>
-              Documento anexo
+        {/* Anexos no rodapé */}
+        {attachments.length > 0 && (
+          <div className="mt-12 pt-8" style={{ borderTop: "1px solid rgba(26,14,5,0.1)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(26,14,5,0.4)" }}>
+              Documentos anexos
             </p>
-            {attachment.startsWith("data:application/pdf") ? (
-              <a
-                href={attachment}
-                download="termos-vdo-hub.pdf"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
-                style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }}>
-                📄 Baixar PDF dos termos
-              </a>
-            ) : attachment.startsWith("data:image") ? (
-              <img src={attachment} alt="Anexo dos termos" className="rounded-xl max-w-full" />
-            ) : (
-              <a href={attachment} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
-                style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05" }}>
-                📎 Ver documento anexo
-              </a>
-            )}
+            <div className="space-y-2">
+              {attachments.map((a) => {
+                const isPdf   = a.data.startsWith("data:application/pdf");
+                const isImage = a.data.startsWith("data:image");
+                const icon    = isPdf ? "📄" : "🖼";
+                const label   = a.name || (isPdf ? "Baixar PDF" : "Ver imagem");
+
+                if (isImage) {
+                  return (
+                    <div key={a.id}>
+                      <p className="text-xs mb-2" style={{ color: "rgba(26,14,5,0.5)" }}>{icon} {label}</p>
+                      <img src={a.data} alt={label} className="rounded-xl max-w-full" />
+                    </div>
+                  );
+                }
+                return (
+                  <a key={a.id}
+                    href={a.data}
+                    download={a.name}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full"
+                    style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }}>
+                    {icon} {label}
+                  </a>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
