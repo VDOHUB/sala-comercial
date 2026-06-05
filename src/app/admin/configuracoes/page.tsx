@@ -2,13 +2,15 @@
 import { useEffect, useRef, useState } from "react";
 
 type FaqItem = { id: string; question: string; answer: string; order: number };
-type TermsAttachment = { id: string; name: string; data: string };
+type AttachmentMeta = { id: string; name: string }; // sem base64 na listagem
 
 export default function ConfiguracoesPage() {
   const [terms, setTerms]               = useState("");
   const [termsSaved, setTermsSaved]     = useState(false);
   const [termsSaving, setTermsSaving]   = useState(false);
-  const [attachments, setAttachments]   = useState<TermsAttachment[]>([]);
+  const [attachments, setAttachments]   = useState<AttachmentMeta[]>([]);
+  const [uploading, setUploading]       = useState(false);
+  const [uploadError, setUploadError]   = useState<string | null>(null);
   const attachRef                       = useRef<HTMLInputElement>(null);
 
   // FAQ
@@ -18,15 +20,17 @@ export default function ConfiguracoesPage() {
   const [newQ, setNewQ]             = useState("");
   const [newA, setNewA]             = useState("");
 
+  function loadAttachments() {
+    fetch("/api/admin/terms-attachments")
+      .then((r) => r.json())
+      .then((d: AttachmentMeta[]) => { if (Array.isArray(d)) setAttachments(d); });
+  }
+
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((r) => r.json())
-      .then((data) => {
-        if (data.terms) setTerms(data.terms);
-        if (data.terms_attachments) {
-          try { setAttachments(JSON.parse(data.terms_attachments)); } catch { setAttachments([]); }
-        }
-      });
+      .then((data) => { if (data.terms) setTerms(data.terms); });
+    loadAttachments();
     fetch("/api/admin/faq")
       .then((r) => r.json())
       .then((data: FaqItem[]) => { if (Array.isArray(data)) setFaq(data); });
@@ -38,40 +42,60 @@ export default function ConfiguracoesPage() {
       const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ terms, terms_attachments: JSON.stringify(attachments) }),
+        body: JSON.stringify({ terms }),
       });
-      const data = await res.json();
-      console.log("[saveTerms] response:", data, "attachments count:", attachments.length);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTermsSaved(true);
       setTimeout(() => setTermsSaved(false), 3000);
     } catch (err) {
       console.error("[saveTerms] error:", err);
-      alert("Erro ao salvar. Verifique o console.");
+      alert("Erro ao salvar os termos. Tente novamente.");
     } finally {
       setTermsSaving(false);
     }
   }
 
-  function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const data = ev.target?.result as string;
-        setAttachments((prev) => [
-          ...prev,
-          { id: Date.now().toString() + Math.random(), name: file.name, data },
-        ]);
-      };
-      reader.readAsDataURL(file);
-    });
-    // reset input so same file can be added again if needed
     e.target.value = "";
+    setUploading(true);
+    setUploadError(null);
+
+    for (const file of files) {
+      try {
+        // Ler como base64
+        const data: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = (ev) => resolve(ev.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Fazer upload individual para o endpoint dedicado
+        const res = await fetch("/api/admin/terms-attachments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: file.name, data }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error ?? `HTTP ${res.status}`);
+        }
+      } catch (err) {
+        console.error("[upload] error:", err);
+        setUploadError(`Erro ao enviar "${file.name}": ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    setUploading(false);
+    loadAttachments();
   }
 
-  function removeAttachment(id: string) {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  async function removeAttachment(id: string) {
+    await fetch(`/api/admin/terms-attachments?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    loadAttachments();
   }
 
   // FAQ helpers
@@ -196,14 +220,15 @@ export default function ConfiguracoesPage() {
             }}
           />
 
-          {/* Anexos */}
+          {/* Anexos — upload individual para evitar limite de tamanho */}
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(26,14,5,0.08)" }}>
             <p className="text-sm font-medium mb-1" style={{ color: "#1a0e05" }}>Anexos dos termos</p>
             <p className="text-xs mb-3" style={{ color: "rgba(26,14,5,0.4)" }}>
               PDFs ou imagens exibidos como links de download no rodapé da página de termos. Pode adicionar vários.
+              O upload é feito imediatamente ao selecionar o arquivo — não é necessário clicar em "Salvar termos".
             </p>
 
-            {/* Lista de arquivos já adicionados */}
+            {/* Lista de arquivos salvos */}
             {attachments.length > 0 && (
               <div className="space-y-2 mb-3">
                 {attachments.map((a) => (
@@ -211,7 +236,7 @@ export default function ConfiguracoesPage() {
                     style={{ background: "rgba(26,14,5,0.04)", border: "1px solid rgba(26,14,5,0.08)" }}>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-sm">
-                        {a.data.startsWith("data:application/pdf") ? "📄" : "🖼"}
+                        {a.name.toLowerCase().endsWith(".pdf") ? "📄" : "🖼"}
                       </span>
                       <span className="text-xs font-medium truncate" style={{ color: "#1a0e05" }}>{a.name}</span>
                     </div>
@@ -225,12 +250,25 @@ export default function ConfiguracoesPage() {
               </div>
             )}
 
+            {uploading && (
+              <p className="text-xs mb-2 font-medium" style={{ color: "rgba(26,14,5,0.5)" }}>
+                ⏳ Enviando arquivo(s)...
+              </p>
+            )}
+            {uploadError && (
+              <p className="text-xs mb-2 px-3 py-2 rounded-xl"
+                style={{ background: "rgba(220,38,38,0.07)", color: "#dc2626", border: "1px solid rgba(220,38,38,0.15)" }}>
+                {uploadError}
+              </p>
+            )}
+
             <button
               type="button"
+              disabled={uploading}
               onClick={() => attachRef.current?.click()}
-              className="px-4 py-2 rounded-xl text-sm font-medium"
+              className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
               style={{ background: "rgba(26,14,5,0.07)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.12)" }}>
-              📎 Adicionar arquivo(s)
+              📎 {uploading ? "Enviando..." : "Adicionar arquivo(s)"}
             </button>
             <input ref={attachRef} type="file" accept=".pdf,.jpg,.jpeg,.png" multiple className="hidden" onChange={handleAttachFiles} />
           </div>

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type TermsAttachment = { id: string; name: string; data: string };
+type TermsAttachment = { id: string; name: string; data?: string };
 
 const DEFAULT_TERMS = `**TERMOS DE USO — VDO HUB**
 
@@ -84,26 +84,18 @@ export default async function TermosPage() {
             </p>
             <div className="space-y-2">
               {attachments.map((a) => {
-                const isPdf   = a.data.startsWith("data:application/pdf");
-                const isImage = a.data.startsWith("data:image");
-                const icon    = isPdf ? "📄" : "🖼";
-                const label   = a.name || (isPdf ? "Baixar PDF" : "Ver imagem");
+                const isPdf = a.name.toLowerCase().endsWith(".pdf");
+                const icon  = isPdf ? "📄" : "🖼";
+                const downloadUrl = `/api/admin/terms-attachments/${a.id}`;
 
-                if (isImage) {
-                  return (
-                    <div key={a.id}>
-                      <p className="text-xs mb-2" style={{ color: "rgba(26,14,5,0.5)" }}>{icon} {label}</p>
-                      <img src={a.data} alt={label} className="rounded-xl max-w-full" />
-                    </div>
-                  );
-                }
                 return (
                   <a key={a.id}
-                    href={a.data}
-                    download={a.name}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full"
+                    href={downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full"
                     style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }}>
-                    {icon} {label}
+                    {icon} {a.name}
                   </a>
                 );
               })}
