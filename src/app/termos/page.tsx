@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type TermsAttachment = { id: string; name: string; data?: string };
+type TermsAttachment = { id: string; name: string; url: string };
 
 const DEFAULT_TERMS = `**TERMOS DE USO — VDO HUB**
 
@@ -86,11 +86,10 @@ export default async function TermosPage() {
               {attachments.map((a) => {
                 const isPdf = a.name.toLowerCase().endsWith(".pdf");
                 const icon  = isPdf ? "📄" : "🖼";
-                const downloadUrl = `/api/admin/terms-attachments/${a.id}`;
 
                 return (
                   <a key={a.id}
-                    href={downloadUrl}
+                    href={a.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full"

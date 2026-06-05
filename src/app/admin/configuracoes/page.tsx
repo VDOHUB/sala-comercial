@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 
 type FaqItem = { id: string; question: string; answer: string; order: number };
-type AttachmentMeta = { id: string; name: string }; // sem base64 na listagem
+type AttachmentMeta = { id: string; name: string; url?: string };
 
 export default function ConfiguracoesPage() {
   const [terms, setTerms]               = useState("");
@@ -64,25 +65,11 @@ export default function ConfiguracoesPage() {
 
     for (const file of files) {
       try {
-        // Ler como base64
-        const data: string = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload  = (ev) => resolve(ev.target?.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+        // Upload direto para o Vercel Blob CDN — sem passar pelo limite de 4.5MB da API
+        await upload(file.name, file, {
+          access:            "public",
+          handleUploadUrl:   "/api/admin/terms-attachments/upload",
         });
-
-        // Fazer upload individual para o endpoint dedicado
-        const res = await fetch("/api/admin/terms-attachments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: file.name, data }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error ?? `HTTP ${res.status}`);
-        }
       } catch (err) {
         console.error("[upload] error:", err);
         setUploadError(`Erro ao enviar "${file.name}": ${err instanceof Error ? err.message : String(err)}`);

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { del } from "@vercel/blob";
 
-type Attachment = { id: string; name: string; data: string };
+type Attachment = { id: string; name: string; url: string };
 
 async function getAttachments(): Promise<Attachment[]> {
   const setting = await prisma.setting.findUnique({ where: { key: "terms_attachments" } });
@@ -18,33 +19,16 @@ async function saveAttachments(list: Attachment[]) {
   });
 }
 
-// GET — lista de anexos (sem o campo data para não sobrecarregar)
+// GET — lista de anexos (id, name, url)
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const attachments = await getAttachments();
-  // Retorna só id e name (sem base64) para listagem
-  return NextResponse.json(attachments.map(({ id, name }) => ({ id, name })));
+  return NextResponse.json(attachments);
 }
 
-// POST — adiciona um anexo
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { name, data } = await req.json() as { name: string; data: string };
-  if (!name || !data) return NextResponse.json({ error: "Campos obrigatórios: name, data" }, { status: 400 });
-
-  const list = await getAttachments();
-  const id   = Date.now().toString() + Math.random().toString(36).slice(2);
-  list.push({ id, name, data });
-  await saveAttachments(list);
-
-  return NextResponse.json({ ok: true, id, name });
-}
-
-// DELETE — remove um anexo pelo id (via query param ?id=...)
+// DELETE — remove um anexo pelo id (?id=...)
 export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,8 +37,13 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
 
   const list = await getAttachments();
-  const filtered = list.filter((a) => a.id !== id);
-  await saveAttachments(filtered);
+  const item = list.find((a) => a.id === id);
 
+  // Remove do Vercel Blob também
+  if (item?.url) {
+    try { await del(item.url); } catch (e) { console.warn("[terms-attachments] del blob error:", e); }
+  }
+
+  await saveAttachments(list.filter((a) => a.id !== id));
   return NextResponse.json({ ok: true });
 }
