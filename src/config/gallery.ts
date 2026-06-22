@@ -53,15 +53,27 @@ export const roomPhotos: RoomPhoto[] = [
     heroPanel: false,
     fallback: "linear-gradient(140deg, #1a0e05 0%, #3a2412 40%, #5a3822 100%)",
   },
-
-  // ── Adicione novas fotos aqui ─────────────────────────────────────────────
-  // {
-  //   id: 6,
-  //   src: "/sala/foto-06.jpeg",
-  //   label: "Recepção",
-  //   heroPanel: false,
-  //   fallback: "linear-gradient(135deg, #2a1608 0%, #4d3015 100%)",
-  // },
+  {
+    id: 6,
+    src: "/sala/foto-06.jpeg",
+    label: "Espaço de trabalho",
+    heroPanel: false,
+    fallback: "linear-gradient(135deg, #2a1608 0%, #4d3015 100%)",
+  },
+  {
+    id: 7,
+    src: "/sala/foto-07.jpeg",
+    label: "Área de atendimento",
+    heroPanel: false,
+    fallback: "linear-gradient(150deg, #1a0e05 0%, #3a2412 100%)",
+  },
+  {
+    id: 8,
+    src: "/sala/foto-08.jpeg",
+    label: "Infraestrutura",
+    heroPanel: false,
+    fallback: "linear-gradient(140deg, #321e07 0%, #5a3822 100%)",
+  },
 ];
 
 // Fotos usadas no painel do Hero (filtragem automática)
