@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: "VDO HUB",
     locale: "pt_BR",
     type: "website",
-    images: [{ url: "https://vdohub.viverdeobra.com/logo.png", width: 500, height: 500, alt: "VDO HUB" }],
+    images: [{ url: "https://vdohub.viverdeobra.com/sala/foto-08.jpeg", width: 1200, height: 630, alt: "VDO HUB — Sala comercial" }],
   },
 };
 
