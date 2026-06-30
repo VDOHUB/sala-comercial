@@ -557,7 +557,7 @@ export default function ClientesPage() {
                         <p className="text-xs" style={{ color: "#166534" }}>✓ Registrado no iDFace</p>
                       ) : (
                         <p className="text-xs" style={{ color: "#854d0e" }}>
-                          ⚠ Falhou no iDFace: {faceResult.idFaceError}
+                          ⚠ {faceResult.idFaceError?.includes("Face exists") ? "Foto já cadastrada" : `Falhou no iDFace: ${faceResult.idFaceError}`}
                         </p>
                       )}
                       {faceResult.qstashResults && faceResult.qstashResults.length > 0 && (
