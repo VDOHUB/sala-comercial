@@ -68,8 +68,9 @@ export default function ClientesPage() {
   const [newModal, setNewModal]       = useState(false);
   const [newForm, setNewForm]         = useState({ name: "", email: "", phone: "", cpf: "" });
   const [newSaving, setNewSaving]     = useState(false);
-  const [newError, setNewError]       = useState<string | null>(null);
-  const [newSuccess, setNewSuccess]   = useState(false);
+  const [newError, setNewError]           = useState<string | null>(null);
+  const [newSuccess, setNewSuccess]       = useState(false);
+  const [newEmailFailed, setNewEmailFailed] = useState(false);
 
   // Reenvio de convite
   const [inviteSending, setInviteSending] = useState(false);
@@ -159,7 +160,7 @@ export default function ClientesPage() {
 
   async function handleNewClient() {
     if (!newForm.name || !newForm.email) { setNewError("Nome e e-mail são obrigatórios"); return; }
-    setNewSaving(true); setNewError(null);
+    setNewSaving(true); setNewError(null); setNewEmailFailed(false);
     const res = await fetch("/api/admin/clients/invite", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newForm),
@@ -167,6 +168,7 @@ export default function ClientesPage() {
     const data = await res.json();
     setNewSaving(false);
     if (!res.ok) { setNewError(data.error ?? "Erro ao criar cliente"); return; }
+    setNewEmailFailed(!!data.emailFailed);
     setNewSuccess(true);
     loadList();
   }
@@ -693,9 +695,15 @@ export default function ClientesPage() {
           <div className="w-full max-w-md rounded-2xl p-6" style={{ background: "#fff" }}>
             {newSuccess ? (
               <>
-                <p className="text-lg font-bold mb-2" style={{ color: "#166534" }}>✓ Cliente criado e convite enviado!</p>
-                <p className="text-sm mb-6" style={{ color: "rgba(26,14,5,0.5)" }}>O cliente receberá um e-mail para finalizar o cadastro com login, senha e dados de pagamento.</p>
-                <button onClick={() => setNewModal(false)} className="w-full py-2.5 rounded-xl text-sm font-semibold" style={{ background: "#1a0e05", color: "#f5f0e8", border: "none", cursor: "pointer" }}>Fechar</button>
+                <p className="text-lg font-bold mb-2" style={{ color: "#166534" }}>✓ Cliente criado!</p>
+                {newEmailFailed ? (
+                  <p className="text-sm mb-2 px-3 py-2 rounded-xl" style={{ background: "rgba(234,179,8,0.1)", color: "#854d0e" }}>
+                    ⚠️ Cliente criado, mas o e-mail de convite não foi enviado. Verifique as configurações do Resend e reenvie pelo painel do cliente.
+                  </p>
+                ) : (
+                  <p className="text-sm mb-2" style={{ color: "rgba(26,14,5,0.5)" }}>O cliente receberá um e-mail para finalizar o cadastro com login, senha e dados de pagamento.</p>
+                )}
+                <button onClick={() => setNewModal(false)} className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold" style={{ background: "#1a0e05", color: "#f5f0e8", border: "none", cursor: "pointer" }}>Fechar</button>
               </>
             ) : (
               <>

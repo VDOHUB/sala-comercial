@@ -47,17 +47,23 @@ export async function POST(req: NextRequest) {
 
   const resend = getResend();
   if (resend) {
-    await resend.emails.send({
-      from: getFrom(),
-      to: client.email,
-      subject: "Finalize seu cadastro — VDO HUB",
-      html: emailWrapper(`
-        <p>Olá, ${client.name}!</p>
-        <p>Seu cadastro foi criado no <strong>VDO HUB</strong>. Para acessar o portal do cliente e fazer reservas, clique no botão abaixo para finalizar seu cadastro:</p>
-        <p><a href="${inviteUrl}" style="background:#1a0e05;color:#f5f0e8;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Finalizar cadastro</a></p>
-        <p style="color:#666;font-size:12px;">Link válido por 72 horas.</p>
-      `),
-    });
+    try {
+      await resend.emails.send({
+        from: getFrom(),
+        to: client.email,
+        subject: "Finalize seu cadastro — VDO HUB",
+        html: emailWrapper(`
+          <p>Olá, ${client.name}!</p>
+          <p>Seu cadastro foi criado no <strong>VDO HUB</strong>. Para acessar o portal do cliente e fazer reservas, clique no botão abaixo para finalizar seu cadastro:</p>
+          <p><a href="${inviteUrl}" style="background:#1a0e05;color:#f5f0e8;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Finalizar cadastro</a></p>
+          <p style="color:#666;font-size:12px;">Link válido por 72 horas.</p>
+        `),
+      });
+    } catch (emailErr) {
+      console.error("[invite] email send failed:", emailErr);
+      // Cliente foi criado; retorna ok mas avisa que o e-mail falhou
+      return NextResponse.json({ ok: true, clientId: client.id, emailFailed: true });
+    }
   }
 
   return NextResponse.json({ ok: true, clientId: client.id });
