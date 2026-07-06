@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { getResend, getFrom, emailWrapper } from "@/lib/resend/emails";
+import { Prisma } from "@prisma/client";
 
 // POST — cria cliente e envia convite
 export async function POST(req: NextRequest) {
@@ -31,16 +32,31 @@ export async function POST(req: NextRequest) {
       if (existing)
         return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 409 });
 
-      client = await prisma.client.create({
-        data: {
-          name,
-          email: email.toLowerCase().trim(),
-          phone: phone || null,
-          cpf:   cpf   || null,
-          inviteToken: token,
-          inviteExpiresAt: expires,
-        },
-      });
+      const cleanCpf = cpf ? cpf.replace(/\D/g, "") : null;
+      if (cleanCpf) {
+        const existingCpf = await prisma.client.findUnique({ where: { cpf: cleanCpf } });
+        if (existingCpf)
+          return NextResponse.json({ error: "CPF já cadastrado para outro cliente" }, { status: 409 });
+      }
+
+      try {
+        client = await prisma.client.create({
+          data: {
+            name,
+            email: email.toLowerCase().trim(),
+            phone: phone || null,
+            cpf:   cleanCpf,
+            inviteToken: token,
+            inviteExpiresAt: expires,
+          },
+        });
+      } catch (dbErr) {
+        if (dbErr instanceof Prisma.PrismaClientKnownRequestError && dbErr.code === "P2002") {
+          const field = (dbErr.meta?.target as string[])?.join(", ") ?? "campo";
+          return NextResponse.json({ error: `${field === "cpf" ? "CPF" : field === "email" ? "E-mail" : "Dado"} já cadastrado` }, { status: 409 });
+        }
+        throw dbErr;
+      }
     }
 
     const base      = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
