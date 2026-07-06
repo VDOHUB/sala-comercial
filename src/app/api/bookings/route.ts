@@ -198,14 +198,21 @@ export async function POST(req: NextRequest) {
         if (charge.creditCardToken) {
           await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: charge.creditCardToken } });
         }
-      } else {
-        const tokenResult = await tokenizeAsaasCard({
-          customer:             asaasCustomerId,
-          creditCard:           cardData,
-          creditCardHolderInfo: holderInfo,
-        });
-        await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: tokenResult.creditCardToken } });
-        console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
+      }
+      // totalAmount === 0 (voucher 100%): tokenizar cartão para cobranças futuras
+      // Tokenização é opcional — se falhar, reserva grátis prossegue normalmente
+      if (totalAmount === 0) {
+        try {
+          const tokenResult = await tokenizeAsaasCard({
+            customer:             asaasCustomerId,
+            creditCard:           cardData,
+            creditCardHolderInfo: holderInfo,
+          });
+          await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: tokenResult.creditCardToken } });
+          console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
+        } catch (tokenErr) {
+          console.warn("[bookings] card tokenization failed (booking proceeds):", tokenErr);
+        }
       }
     }
   } catch (err: unknown) {
