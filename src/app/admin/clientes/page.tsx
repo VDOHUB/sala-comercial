@@ -26,6 +26,10 @@ type Client = {
 };
 
 type ClientDetail = Client & {
+  asaasCustomerId: string | null;
+  asaasCardToken:  string | null;
+  password:        string | null;
+  inviteToken:     string | null;
   bookings: Array<{
     id: string; startAt: string; endAt: string; totalAmount: number; status: string;
     voucher: { code: string } | null;
@@ -66,6 +70,22 @@ export default function ClientesPage() {
   const [newSaving, setNewSaving]     = useState(false);
   const [newError, setNewError]       = useState<string | null>(null);
   const [newSuccess, setNewSuccess]   = useState(false);
+
+  // Reenvio de convite
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteMsg, setInviteMsg]         = useState<string | null>(null);
+
+  async function handleResendInvite() {
+    if (!selected) return;
+    setInviteSending(true); setInviteMsg(null);
+    const res = await fetch("/api/admin/clients/invite", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: selected.id }),
+    });
+    const data = await res.json();
+    setInviteSending(false);
+    setInviteMsg(res.ok ? "Convite enviado!" : (data.error ?? "Erro ao enviar"));
+  }
 
   // Foto facial (upload pelo admin)
   const [faceModal, setFaceModal]     = useState(false);
@@ -434,6 +454,43 @@ export default function ClientesPage() {
                   ) : null)}
                 </div>
               )}
+
+              {/* Pagamento e Portal */}
+              <div className="rounded-xl p-3 space-y-2"
+                style={{ background: "rgba(26,14,5,0.03)", border: "1px solid rgba(26,14,5,0.07)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.35)" }}>
+                  Pagamento e Portal
+                </p>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: "rgba(26,14,5,0.45)" }}>Cartão salvo</span>
+                  {selected.asaasCardToken ? (
+                    <span className="font-semibold" style={{ color: "#166534" }}>✓ Sim</span>
+                  ) : (
+                    <span style={{ color: "rgba(26,14,5,0.35)" }}>Não</span>
+                  )}
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: "rgba(26,14,5,0.45)" }}>Acesso ao portal</span>
+                  {selected.password ? (
+                    <span className="font-semibold" style={{ color: "#166534" }}>✓ Ativo</span>
+                  ) : selected.inviteToken ? (
+                    <span style={{ color: "#854d0e" }}>Convite pendente</span>
+                  ) : (
+                    <span style={{ color: "rgba(26,14,5,0.35)" }}>Sem acesso</span>
+                  )}
+                </div>
+                <button onClick={() => { setInviteMsg(null); handleResendInvite(); }}
+                  disabled={inviteSending}
+                  className="w-full py-1.5 rounded-lg text-xs font-semibold mt-1 disabled:opacity-40"
+                  style={{ background: "rgba(37,99,235,0.07)", color: "#1e40af", border: "1px solid rgba(37,99,235,0.15)" }}>
+                  {inviteSending ? "Enviando..." : selected.password ? "Reenviar acesso" : "Enviar convite de acesso"}
+                </button>
+                {inviteMsg && (
+                  <p className="text-xs text-center" style={{ color: inviteMsg === "Convite enviado!" ? "#166534" : "#991b1b" }}>
+                    {inviteMsg}
+                  </p>
+                )}
+              </div>
 
               {/* Assinaturas */}
               {selected.subscriptions.length > 0 && (
