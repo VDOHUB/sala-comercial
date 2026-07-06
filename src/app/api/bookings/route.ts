@@ -199,27 +199,27 @@ export async function POST(req: NextRequest) {
           await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: charge.creditCardToken } });
         }
       }
-      // totalAmount === 0 (voucher 100%): tokenizar cartão para cobranças futuras
-      // Tokenização é opcional — se falhar, reserva grátis prossegue normalmente
+      // totalAmount === 0 (voucher 100%): tokenizar cartão obrigatoriamente para cobranças futuras
       if (totalAmount === 0) {
-        try {
-          const tokenResult = await tokenizeAsaasCard({
-            customer:             asaasCustomerId,
-            creditCard:           cardData,
-            creditCardHolderInfo: holderInfo,
-          });
-          await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: tokenResult.creditCardToken } });
-          console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
-        } catch (tokenErr) {
-          console.warn("[bookings] card tokenization failed (booking proceeds):", tokenErr);
-        }
+        const tokenResult = await tokenizeAsaasCard({
+          customer:             asaasCustomerId,
+          creditCard:           cardData,
+          creditCardHolderInfo: holderInfo,
+        });
+        await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: tokenResult.creditCardToken } });
+        console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
       }
     }
   } catch (err: unknown) {
     const asaasErrors = (err as { response?: { data?: { errors?: { code: string; description: string }[] } } })
       ?.response?.data?.errors;
     console.error("[bookings] ASAAS error details:", JSON.stringify(asaasErrors ?? err));
-    const msg = asaasErrors?.[0]?.description ?? "Cartão recusado. Verifique os dados e tente novamente.";
+    const asaasMsg = asaasErrors?.[0]?.description;
+    // Tokenização falhou (valor zero): mensagem específica
+    const msg = asaasMsg
+      ?? (totalAmount === 0
+        ? "Não foi possível salvar o cartão. Verifique os dados e tente novamente."
+        : "Cartão recusado. Verifique os dados e tente novamente.");
     return NextResponse.json({ error: msg }, { status: 402 });
   }
 
