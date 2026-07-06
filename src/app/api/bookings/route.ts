@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createAsaasCustomer, updateAsaasCustomer, createAsaasCharge, tokenizeAsaasCard } from "@/lib/asaas/client";
+import { createAsaasCustomer, updateAsaasCustomer, createAsaasCharge, createAsaasChargeWithToken, tokenizeAsaasCard } from "@/lib/asaas/client";
 import { sendSubscriptionConfirmation } from "@/lib/resend/emails";
 import { sendBookingConfirmationWithPhoto } from "@/lib/resend/notifications";
 import { z } from "zod";
@@ -39,6 +39,7 @@ const schema = z.object({
   voucherCode:       z.string().optional(),
   installmentCount:  z.number().int().min(1).max(12).optional(),
   card:              cardSchema.optional(),
+  useSavedCard:      z.boolean().optional(),
 });
 
 // ── POST /api/bookings ────────────────────────────────────────────
@@ -107,101 +108,105 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Processar pagamento / tokenização ASAAS (cartão sempre obrigatório) ──
-  if (!data.card) {
+  // ── Processar pagamento ASAAS ──────────────────────────────────────
+  if (!data.card && !data.useSavedCard) {
     return NextResponse.json({ error: "Dados do cartão obrigatórios." }, { status: 400 });
+  }
+  if (data.useSavedCard && (!client.asaasCustomerId || !client.asaasCardToken)) {
+    return NextResponse.json({ error: "Nenhum cartão salvo encontrado. Informe os dados do cartão." }, { status: 422 });
   }
 
   let chargeId: string | null = null;
   let paymentUrl: string | null = null;
 
   try {
-    // Criar (ou reusar) cliente no ASAAS
-    let asaasCustomerId = client.asaasCustomerId;
-    if (!asaasCustomerId) {
-      const asaasCustomer = await createAsaasCustomer({
-        name:     client.name,
-        email:    client.email,
-        cpfCnpj: client.cpf ?? undefined,
-        phone:    client.phone ?? undefined,
-      });
-      asaasCustomerId = asaasCustomer.id;
-      await prisma.client.update({
-        where: { id: client.id },
-        data:  { asaasCustomerId },
-      });
-      client = { ...client, asaasCustomerId };
-    }
-
-    const cardData = {
-      holderName:  data.card.holderName,
-      number:      data.card.number.replace(/\s/g, ""),
-      expiryMonth: data.card.expiryMonth,
-      expiryYear:  data.card.expiryYear,
-      ccv:         data.card.ccv,
-    };
-    // CPF: prioridade para o que veio no formulário do cartão, fallback para o cadastro do cliente
-    const cpfCnpj = data.card.cpf || client.cpf || undefined;
-
-    // Salvar CPF no cliente se ainda não tinha e atualizar no ASAAS
-    if (data.card.cpf && !client.cpf) {
-      await prisma.client.update({ where: { id: client.id }, data: { cpf: data.card.cpf } });
-      // Atualizar cadastro no ASAAS com CPF (necessário para cobrança de cartão)
-      try {
-        await updateAsaasCustomer(asaasCustomerId, { cpfCnpj: data.card.cpf });
-      } catch (e) {
-        console.warn("[bookings] falha ao atualizar CPF no ASAAS:", e);
-      }
-    }
-
-    const holderInfo = {
-      name:              client.name,
-      email:             client.email,
-      cpfCnpj,
-      phone:             client.phone ?? undefined,
-      postalCode:        data.card.postalCode ?? undefined,
-      addressNumber:     data.card.addressNumber ?? undefined,
-      addressComplement: data.card.addressComplement ?? undefined,
-      address:           data.card.address ?? undefined,
-    };
-
-    if (totalAmount > 0) {
-      const installments = (data.installmentCount ?? 1) > 1 ? data.installmentCount : undefined;
-      const charge = await createAsaasCharge({
-        customer:    asaasCustomerId,
-        billingType: "CREDIT_CARD",
-        value:       totalAmount,
-        dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
-        description: isMultiPeriod
-          ? plan.label
-          : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
-        installmentCount: installments,
-        installmentValue: installments ? Math.ceil((totalAmount / installments) * 100) / 100 : undefined,
-        creditCard:           cardData,
-        creditCardHolderInfo: holderInfo,
-      });
-      chargeId   = charge.id;
-      paymentUrl = charge.invoiceUrl;
-
-      // Salvar token do cartão para cobranças futuras (ex: frigobar)
-      if (charge.creditCardToken) {
-        await prisma.client.update({
-          where: { id: client.id },
-          data:  { asaasCardToken: charge.creditCardToken },
+    if (data.useSavedCard) {
+      // ── Cobrar com token salvo ─────────────────────────────────────
+      if (totalAmount > 0) {
+        const charge = await createAsaasChargeWithToken({
+          customer:        client.asaasCustomerId!,
+          creditCardToken: client.asaasCardToken!,
+          value:           totalAmount,
+          dueDate:         format(addDays(new Date(), 1), "yyyy-MM-dd"),
+          description:     isMultiPeriod
+            ? plan.label
+            : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
+          externalReference: `portal-${client.id}`,
         });
+        chargeId   = charge.id;
+        paymentUrl = charge.invoiceUrl;
       }
+      // totalAmount === 0 com cartão salvo: sem cobrança, apenas prossegue
     } else {
-      // Valor zero (cupom 100%) — apenas tokenizar o cartão para cobranças futuras
-      const tokenResult = await tokenizeAsaasCard({
-        customer:             asaasCustomerId,
-        creditCard:           cardData,
-        creditCardHolderInfo: holderInfo,
-      });
-      await prisma.client.update({
-        where: { id: client.id },
-        data:  { asaasCardToken: tokenResult.creditCardToken },
-      });
-      console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
+      // ── Cobrar com dados completos do cartão ──────────────────────
+      let asaasCustomerId = client.asaasCustomerId;
+      if (!asaasCustomerId) {
+        const asaasCustomer = await createAsaasCustomer({
+          name:     client.name,
+          email:    client.email,
+          cpfCnpj: client.cpf ?? undefined,
+          phone:    client.phone ?? undefined,
+        });
+        asaasCustomerId = asaasCustomer.id;
+        await prisma.client.update({ where: { id: client.id }, data: { asaasCustomerId } });
+        client = { ...client, asaasCustomerId };
+      }
+
+      const cardData = {
+        holderName:  data.card!.holderName,
+        number:      data.card!.number.replace(/\s/g, ""),
+        expiryMonth: data.card!.expiryMonth,
+        expiryYear:  data.card!.expiryYear,
+        ccv:         data.card!.ccv,
+      };
+      const cpfCnpj = data.card!.cpf || client.cpf || undefined;
+
+      if (data.card!.cpf && !client.cpf) {
+        await prisma.client.update({ where: { id: client.id }, data: { cpf: data.card!.cpf } });
+        try { await updateAsaasCustomer(asaasCustomerId, { cpfCnpj: data.card!.cpf }); }
+        catch (e) { console.warn("[bookings] falha ao atualizar CPF no ASAAS:", e); }
+      }
+
+      const holderInfo = {
+        name:              client.name,
+        email:             client.email,
+        cpfCnpj,
+        phone:             client.phone ?? undefined,
+        postalCode:        data.card!.postalCode ?? undefined,
+        addressNumber:     data.card!.addressNumber ?? undefined,
+        addressComplement: data.card!.addressComplement ?? undefined,
+        address:           data.card!.address ?? undefined,
+      };
+
+      if (totalAmount > 0) {
+        const installments = (data.installmentCount ?? 1) > 1 ? data.installmentCount : undefined;
+        const charge = await createAsaasCharge({
+          customer:    asaasCustomerId,
+          billingType: "CREDIT_CARD",
+          value:       totalAmount,
+          dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
+          description: isMultiPeriod
+            ? plan.label
+            : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
+          installmentCount: installments,
+          installmentValue: installments ? Math.ceil((totalAmount / installments) * 100) / 100 : undefined,
+          creditCard:           cardData,
+          creditCardHolderInfo: holderInfo,
+        });
+        chargeId   = charge.id;
+        paymentUrl = charge.invoiceUrl;
+        if (charge.creditCardToken) {
+          await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: charge.creditCardToken } });
+        }
+      } else {
+        const tokenResult = await tokenizeAsaasCard({
+          customer:             asaasCustomerId,
+          creditCard:           cardData,
+          creditCardHolderInfo: holderInfo,
+        });
+        await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: tokenResult.creditCardToken } });
+        console.log(`[bookings] card tokenized for client ${client.id}: ${tokenResult.creditCardBrand} ****${tokenResult.creditCardNumber}`);
+      }
     }
   } catch (err: unknown) {
     const asaasErrors = (err as { response?: { data?: { errors?: { code: string; description: string }[] } } })

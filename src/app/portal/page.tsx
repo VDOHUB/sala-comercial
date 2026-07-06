@@ -89,10 +89,10 @@ export default function PortalPage() {
 
         {/* Ações rápidas */}
         <div style={{ display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap" }}>
-          <a href="/#reservar" style={{ background: "#1a0e05", color: "#f5f0e8", padding: "10px 20px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
+          <a href="/portal/reservar" style={{ background: "#1a0e05", color: "#f5f0e8", padding: "10px 20px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
             + Nova reserva
           </a>
-          <a href="/#planos" style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", padding: "10px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: "none", border: "1px solid rgba(26,14,5,0.1)" }}>
+          <a href="/portal/planos" style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", padding: "10px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: "none", border: "1px solid rgba(26,14,5,0.1)" }}>
             Ver planos
           </a>
         </div>
