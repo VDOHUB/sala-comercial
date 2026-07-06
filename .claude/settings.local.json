@@ -45,7 +45,8 @@
       "Bash(powershell -Command \"Get-Content .env.local | Select-String -Pattern 'CONTROLID'\")",
       "Bash(dir \"D:\\\\1 - Projetos\\\\Carlos\\\\automacao_sala_comercial\\\\src\\\\app\\\\admin\" /b)",
       "Bash(dir \"D:\\\\1 - Projetos\\\\Carlos\\\\automacao_sala_comercial\\\\src\\\\components\\\\landing\" /b)",
-      "Bash(node -e \"require\\('@vercel/blob'\\); console.log\\('ok'\\)\")"
+      "Bash(node -e \"require\\('@vercel/blob'\\); console.log\\('ok'\\)\")",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

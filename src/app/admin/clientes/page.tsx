@@ -60,6 +60,13 @@ export default function ClientesPage() {
   const [deleting, setDeleting]       = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Novo cliente
+  const [newModal, setNewModal]       = useState(false);
+  const [newForm, setNewForm]         = useState({ name: "", email: "", phone: "", cpf: "" });
+  const [newSaving, setNewSaving]     = useState(false);
+  const [newError, setNewError]       = useState<string | null>(null);
+  const [newSuccess, setNewSuccess]   = useState(false);
+
   // Foto facial (upload pelo admin)
   const [faceModal, setFaceModal]     = useState(false);
   const [facePreview, setFacePreview] = useState<string | null>(null);
@@ -130,6 +137,20 @@ export default function ClientesPage() {
     loadList();
   }
 
+  async function handleNewClient() {
+    if (!newForm.name || !newForm.email) { setNewError("Nome e e-mail são obrigatórios"); return; }
+    setNewSaving(true); setNewError(null);
+    const res = await fetch("/api/admin/clients/invite", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newForm),
+    });
+    const data = await res.json();
+    setNewSaving(false);
+    if (!res.ok) { setNewError(data.error ?? "Erro ao criar cliente"); return; }
+    setNewSuccess(true);
+    loadList();
+  }
+
   function openFaceModal() {
     setFacePreview(null);
     setFaceResult(null);
@@ -179,6 +200,11 @@ export default function ClientesPage() {
               {clients.length} cliente{clients.length !== 1 ? "s" : ""}
             </p>
           </div>
+          <button onClick={() => { setNewModal(true); setNewSuccess(false); setNewError(null); setNewForm({ name: "", email: "", phone: "", cpf: "" }); }}
+            className="px-4 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: "#1a0e05", color: "#f5f0e8", border: "none", cursor: "pointer" }}>
+            + Novo Cliente
+          </button>
         </div>
 
         <div className="mb-6">
@@ -600,6 +626,55 @@ export default function ClientesPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Novo Cliente */}
+      {newModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: "#fff" }}>
+            {newSuccess ? (
+              <>
+                <p className="text-lg font-bold mb-2" style={{ color: "#166534" }}>✓ Cliente criado e convite enviado!</p>
+                <p className="text-sm mb-6" style={{ color: "rgba(26,14,5,0.5)" }}>O cliente receberá um e-mail para finalizar o cadastro com login, senha e dados de pagamento.</p>
+                <button onClick={() => setNewModal(false)} className="w-full py-2.5 rounded-xl text-sm font-semibold" style={{ background: "#1a0e05", color: "#f5f0e8", border: "none", cursor: "pointer" }}>Fechar</button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold mb-1" style={{ color: "#1a0e05" }}>Novo Cliente</h2>
+                <p className="text-sm mb-6" style={{ color: "rgba(26,14,5,0.45)" }}>Preencha os dados básicos. O cliente receberá um e-mail para finalizar o cadastro.</p>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.45)" }}>Nome *</label>
+                    <input value={newForm.name} onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nome completo"
+                      className="mt-1 block w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.45)" }}>E-mail *</label>
+                    <input type="email" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))} placeholder="email@exemplo.com"
+                      className="mt-1 block w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.45)" }}>Telefone</label>
+                    <input value={newForm.phone} onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value }))} placeholder="(62) 99999-9999"
+                      className="mt-1 block w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(26,14,5,0.45)" }}>CPF</label>
+                    <input value={newForm.cpf} onChange={(e) => setNewForm((f) => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00"
+                      className="mt-1 block w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style={{ background: "#f5f0e8", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                  </div>
+                  {newError && <p className="text-sm" style={{ color: "#dc2626" }}>{newError}</p>}
+                  <div className="flex gap-3 mt-2">
+                    <button onClick={() => setNewModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ background: "rgba(26,14,5,0.05)", color: "rgba(26,14,5,0.5)", border: "none", cursor: "pointer" }}>Cancelar</button>
+                    <button onClick={handleNewClient} disabled={newSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40" style={{ background: "#1a0e05", color: "#f5f0e8", border: "none", cursor: "pointer" }}>
+                      {newSaving ? "Criando..." : "Criar e enviar convite"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

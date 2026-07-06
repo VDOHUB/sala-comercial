@@ -79,18 +79,26 @@ export function Navbar() {
           </nav>
 
           {/* CTA */}
-          <motion.button
-            onClick={() => scrollTo("reservar")}
-            className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold relative overflow-hidden"
-            style={{
-              background: "#1a0e05",
-              color: "#f5f0e8",
-            }}
-            whileHover={{ scale: 1.03, boxShadow: "0 4px 16px rgba(26,14,5,0.2)" }}
-            whileTap={{ scale: 0.97 }}
-          >
-            Reservar agora
-          </motion.button>
+          <div className="hidden md:flex items-center gap-3">
+            <motion.a
+              href="/portal"
+              className="px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ color: "rgba(26,14,5,0.6)", border: "1px solid rgba(26,14,5,0.15)", textDecoration: "none" }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Portal do Cliente
+            </motion.a>
+            <motion.button
+              onClick={() => scrollTo("reservar")}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold relative overflow-hidden"
+              style={{ background: "#1a0e05", color: "#f5f0e8" }}
+              whileHover={{ scale: 1.03, boxShadow: "0 4px 16px rgba(26,14,5,0.2)" }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Reservar agora
+            </motion.button>
+          </div>
 
           {/* Mobile menu button */}
           <button
@@ -141,6 +149,12 @@ export function Navbar() {
                   {link.label}
                 </button>
               ))}
+              <a href="/portal"
+                className="px-5 py-3 rounded-xl text-sm font-semibold text-center"
+                style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", textDecoration: "none", border: "1px solid rgba(26,14,5,0.1)" }}
+              >
+                Portal do Cliente
+              </a>
               <button
                 onClick={() => scrollTo("reservar")}
                 className="mt-2 px-5 py-3 rounded-xl text-sm font-semibold"

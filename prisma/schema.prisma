@@ -17,6 +17,14 @@ model Client {
   controlidUserId Int?     // ID do usuário no iDFace
   asaasCustomerId String?  // ID do cliente no ASAAS
   asaasCardToken  String?  // Token do cartão salvo no ASAAS
+
+  // Portal do cliente
+  password          String?  // bcrypt hash
+  inviteToken       String?  @unique  // token de convite/ativação
+  inviteExpiresAt   DateTime?
+  passwordResetToken String? @unique
+  passwordResetExpiresAt DateTime?
+
   createdAt       DateTime @default(now())
   updatedAt DateTime @updatedAt
 
