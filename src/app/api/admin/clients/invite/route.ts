@@ -6,48 +6,49 @@ import { getResend, getFrom, emailWrapper } from "@/lib/resend/emails";
 
 // POST — cria cliente e envia convite
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, email, phone, cpf, clientId } = await req.json();
+    const { name, email, phone, cpf, clientId } = await req.json();
 
-  const token   = crypto.randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + 1000 * 60 * 60 * 72); // 72h
+    const token   = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 72); // 72h
 
-  let client;
-  if (clientId) {
-    // Reenviar convite para cliente existente
-    client = await prisma.client.update({
-      where: { id: clientId },
-      data: { inviteToken: token, inviteExpiresAt: expires },
-    });
-  } else {
-    // Criar novo cliente
-    if (!name || !email)
-      return NextResponse.json({ error: "Nome e e-mail obrigatórios" }, { status: 400 });
+    let client;
+    if (clientId) {
+      // Reenviar convite para cliente existente
+      client = await prisma.client.update({
+        where: { id: clientId },
+        data: { inviteToken: token, inviteExpiresAt: expires },
+      });
+    } else {
+      // Criar novo cliente
+      if (!name || !email)
+        return NextResponse.json({ error: "Nome e e-mail obrigatórios" }, { status: 400 });
 
-    const existing = await prisma.client.findUnique({ where: { email: email.toLowerCase().trim() } });
-    if (existing)
-      return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 409 });
+      const existing = await prisma.client.findUnique({ where: { email: email.toLowerCase().trim() } });
+      if (existing)
+        return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 409 });
 
-    client = await prisma.client.create({
-      data: {
-        name,
-        email: email.toLowerCase().trim(),
-        phone: phone || null,
-        cpf:   cpf   || null,
-        inviteToken: token,
-        inviteExpiresAt: expires,
-      },
-    });
-  }
+      client = await prisma.client.create({
+        data: {
+          name,
+          email: email.toLowerCase().trim(),
+          phone: phone || null,
+          cpf:   cpf   || null,
+          inviteToken: token,
+          inviteExpiresAt: expires,
+        },
+      });
+    }
 
-  const base      = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
-  const inviteUrl = `${base}/portal/ativar?token=${token}`;
+    const base      = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
+    const inviteUrl = `${base}/portal/ativar?token=${token}`;
 
-  const resend = getResend();
-  if (resend) {
+    let emailFailed = false;
     try {
+      const resend = getResend();
       await resend.emails.send({
         from: getFrom(),
         to: client.email,
@@ -61,10 +62,15 @@ export async function POST(req: NextRequest) {
       });
     } catch (emailErr) {
       console.error("[invite] email send failed:", emailErr);
-      // Cliente foi criado; retorna ok mas avisa que o e-mail falhou
-      return NextResponse.json({ ok: true, clientId: client.id, emailFailed: true });
+      emailFailed = true;
     }
-  }
 
-  return NextResponse.json({ ok: true, clientId: client.id });
+    return NextResponse.json({ ok: true, clientId: client.id, emailFailed });
+  } catch (err) {
+    console.error("[invite] unexpected error:", err);
+    return NextResponse.json(
+      { error: "Erro interno ao criar cliente. Tente novamente." },
+      { status: 500 }
+    );
+  }
 }
