@@ -18,10 +18,9 @@ const PERIODS = [
 
 function buildDays(): Date[] {
   const days: Date[] = [];
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  let d = tomorrow;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let d = today;
   while (days.length < 30) {
     if (!isWeekend(d)) days.push(new Date(d));
     d = addDays(d, 1);
