@@ -118,15 +118,52 @@ export async function addControlIdUserToGroup(
   }
 }
 
-// ── Habilitar acesso: adiciona ao grupo e zera restrição de tempo ─
+// ── Vincular horário ao usuário ───────────────────────────────────
+// time_zone_id 1 = "Sempre Liberado" — obrigatório para a fechadura liberar acesso
+async function addControlIdUserTimeZone(
+  session: string,
+  userId: number,
+  timeZoneId = 1
+): Promise<void> {
+  try {
+    await fcgi(session, "create_objects.fcgi", {
+      object: "user_time_zones",
+      values: [{ user_id: userId, time_zone_id: timeZoneId }],
+    });
+    console.log(`[controlid] user ${userId} linked to time_zone ${timeZoneId}`);
+  } catch (err) {
+    // Ignora se já estiver vinculado (duplicate key)
+    console.warn(`[controlid] addTimeZone warning (may already be linked):`, err);
+  }
+}
+
+// ── Desvincular horário do usuário ────────────────────────────────
+async function removeControlIdUserTimeZone(
+  session: string,
+  userId: number,
+  timeZoneId = 1
+): Promise<void> {
+  try {
+    await fcgi(session, "destroy_objects.fcgi", {
+      object: "user_time_zones",
+      where:  { user_time_zones: { user_id: userId, time_zone_id: timeZoneId } },
+    });
+    console.log(`[controlid] user ${userId} unlinked from time_zone ${timeZoneId}`);
+  } catch (err) {
+    console.warn(`[controlid] removeTimeZone warning:`, err);
+  }
+}
+
+// ── Habilitar acesso: adiciona ao grupo + vincula horário "Sempre Liberado" ─
 export async function enableControlIdUser(
   session: string,
   userId: number
 ): Promise<void> {
-  // Adicionar ao grupo "Padrão" (id:1) — sem isso a fechadura nega acesso
+  // Adicionar ao grupo "Padrão" (id:1)
   await addControlIdUserToGroup(session, userId, 1);
-
-  // begin_time:0 e end_time:0 = sem restrição de tempo (igual aos usuários manuais)
+  // Vincular horário "Sempre Liberado" (id:1) — sem isso a fechadura nega acesso
+  await addControlIdUserTimeZone(session, userId, 1);
+  // Garantir que não há restrição de tempo no cadastro do usuário
   await fcgi(session, "modify_objects.fcgi", {
     object: "users",
     values: { begin_time: 0, end_time: 0 },
@@ -134,12 +171,14 @@ export async function enableControlIdUser(
   });
 }
 
-// ── Desabilitar acesso: seta begin_time=1, end_time=1 (bloqueado) ─
+// ── Desabilitar acesso: remove horário e seta janela impossível ───
 export async function disableControlIdUser(
   session: string,
   userId: number
 ): Promise<void> {
-  // begin_time=1, end_time=1 → janela impossível → acesso negado
+  // Remove o vínculo com "Sempre Liberado"
+  await removeControlIdUserTimeZone(session, userId, 1);
+  // begin_time=1, end_time=1 → janela impossível → garantia extra de bloqueio
   await fcgi(session, "modify_objects.fcgi", {
     object: "users",
     values: { begin_time: 1, end_time: 1 },
