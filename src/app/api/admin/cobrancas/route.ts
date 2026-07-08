@@ -87,6 +87,13 @@ export async function POST(req: NextRequest) {
       });
       chargeId   = charge.id;
       invoiceUrl = charge.invoiceUrl;
+      // Salvar token para cobranças futuras sem precisar dos dados do cartão
+      if (charge.creditCardToken) {
+        await prisma.client.update({
+          where: { id: clientId },
+          data:  { asaasCardToken: charge.creditCardToken },
+        });
+      }
     } else {
       return NextResponse.json(
         { error: "Este cliente não tem cartão salvo. Informe os dados do cartão.", needsCard: true },
