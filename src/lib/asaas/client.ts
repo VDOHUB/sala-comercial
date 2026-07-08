@@ -68,7 +68,7 @@ export async function createAsaasCharge(data: {
 // ── Consultar status do pagamento ─────────────────────────────────
 export async function getAsaasPayment(chargeId: string) {
   const res = await asaas.get(`/payments/${chargeId}`);
-  return res.data as { id: string; status: string };
+  return res.data as { id: string; status: string; creditCardToken?: string };
 }
 
 // ── Estornar pagamento ────────────────────────────────────────────

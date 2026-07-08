@@ -76,6 +76,27 @@ export default function ClientesPage() {
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteMsg, setInviteMsg]         = useState<string | null>(null);
 
+  // Recuperação de token do cartão
+  const [tokenRecovering, setTokenRecovering] = useState(false);
+  const [tokenMsg, setTokenMsg]               = useState<string | null>(null);
+
+  async function handleRecoverToken() {
+    if (!selected) return;
+    setTokenRecovering(true); setTokenMsg(null);
+    const res  = await fetch(`/api/admin/clientes/${selected.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "recover-card-token" }),
+    });
+    const data = await res.json();
+    setTokenRecovering(false);
+    if (res.ok) {
+      setTokenMsg("Token recuperado! Cobrança já disponível.");
+      loadList();
+    } else {
+      setTokenMsg(data.error ?? "Não foi possível recuperar o token.");
+    }
+  }
+
   async function handleResendInvite() {
     if (!selected) return;
     setInviteSending(true); setInviteMsg(null);
@@ -471,6 +492,20 @@ export default function ClientesPage() {
                     <span style={{ color: "rgba(26,14,5,0.35)" }}>Não</span>
                   )}
                 </div>
+                {!selected.asaasCardToken && selected.asaasCustomerId && (
+                  <>
+                    <button onClick={handleRecoverToken} disabled={tokenRecovering}
+                      className="w-full py-1.5 rounded-lg text-xs font-semibold mt-1 disabled:opacity-40"
+                      style={{ background: "rgba(22,163,74,0.07)", color: "#166534", border: "1px solid rgba(22,163,74,0.2)" }}>
+                      {tokenRecovering ? "Recuperando..." : "Recuperar token do cartão"}
+                    </button>
+                    {tokenMsg && (
+                      <p className="text-xs text-center" style={{ color: tokenMsg.startsWith("Token recuperado") ? "#166534" : "#991b1b" }}>
+                        {tokenMsg}
+                      </p>
+                    )}
+                  </>
+                )}
                 <div className="flex justify-between text-sm">
                   <span style={{ color: "rgba(26,14,5,0.45)" }}>Acesso ao portal</span>
                   {selected.password ? (
