@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { getAsaasPayment } from "@/lib/asaas/client";
+import { getAsaasPayment, tokenizeAsaasCard, createAsaasCustomer } from "@/lib/asaas/client";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -34,7 +34,50 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
 
-  // Ação especial: recuperar token do cartão a partir de cobrança Asaas existente
+  // Ação especial: tokenizar cartão sem cobrança (dados fornecidos pelo admin)
+  if (body.action === "tokenize-card") {
+    const { card } = body as {
+      card: { holderName: string; number: string; expiryMonth: string; expiryYear: string; ccv: string };
+    };
+    if (!card?.holderName || !card?.number || !card?.expiryMonth || !card?.expiryYear || !card?.ccv) {
+      return NextResponse.json({ error: "Dados do cartão incompletos." }, { status: 400 });
+    }
+
+    const client = await prisma.client.findUnique({ where: { id } });
+    if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
+
+    let customerId = client.asaasCustomerId;
+    if (!customerId) {
+      const asaasCustomer = await createAsaasCustomer({
+        name: client.name, email: client.email,
+        cpfCnpj: client.cpf ?? undefined, phone: client.phone ?? undefined,
+      });
+      customerId = asaasCustomer.id;
+      await prisma.client.update({ where: { id }, data: { asaasCustomerId: customerId } });
+    }
+
+    const tokenized = await tokenizeAsaasCard({
+      customer: customerId,
+      creditCard: {
+        holderName:  card.holderName,
+        number:      card.number.replace(/\s/g, ""),
+        expiryMonth: card.expiryMonth,
+        expiryYear:  card.expiryYear,
+        ccv:         card.ccv,
+      },
+      creditCardHolderInfo: {
+        name:    client.name,
+        email:   client.email,
+        cpfCnpj: client.cpf ?? undefined,
+        phone:   client.phone ?? undefined,
+      },
+    });
+
+    await prisma.client.update({ where: { id }, data: { asaasCardToken: tokenized.creditCardToken } });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Ação especial: recuperar token a partir de cobrança Asaas existente (fallback legado)
   if (body.action === "recover-card-token") {
     const client = await prisma.client.findUnique({
       where: { id },
@@ -45,24 +88,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
     if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
 
-    const chargeId =
-      client.bookings[0]?.asaasChargeId ??
-      client.subscriptions[0]?.asaasChargeId;
-
+    const chargeId = client.bookings[0]?.asaasChargeId ?? client.subscriptions[0]?.asaasChargeId;
     if (!chargeId) {
       return NextResponse.json({ error: "Nenhuma cobrança Asaas encontrada para este cliente." }, { status: 404 });
     }
 
     const payment = await getAsaasPayment(chargeId);
     if (!payment.creditCardToken) {
-      return NextResponse.json({ error: "Token não disponível nesta cobrança. O cliente pode ter pago via boleto/Pix, ou o token expirou." }, { status: 422 });
+      return NextResponse.json(
+        { error: "Token não disponível nesta cobrança. Use a opção de cadastrar cartão manualmente.", needsCard: true },
+        { status: 422 }
+      );
     }
 
-    await prisma.client.update({
-      where: { id },
-      data:  { asaasCardToken: payment.creditCardToken },
-    });
-
+    await prisma.client.update({ where: { id }, data: { asaasCardToken: payment.creditCardToken } });
     return NextResponse.json({ ok: true, recovered: true });
   }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createAsaasCustomer, updateAsaasCustomer, createAsaasCharge, createAsaasChargeWithToken, tokenizeAsaasCard, refundAsaasPayment } from "@/lib/asaas/client";
+import { createAsaasCustomer, updateAsaasCustomer, createAsaasCharge, createAsaasChargeWithToken, tokenizeAsaasCard } from "@/lib/asaas/client";
 import { sendSubscriptionConfirmation } from "@/lib/resend/emails";
 import { sendBookingConfirmationWithPhoto } from "@/lib/resend/notifications";
 import { z } from "zod";
@@ -199,30 +199,18 @@ export async function POST(req: NextRequest) {
           await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: charge.creditCardToken } });
         }
       }
-      // totalAmount === 0 (voucher 100%): cobrar R$5 só para capturar token, estornar imediatamente
+      // totalAmount === 0 (voucher 100%): tokenizar sem cobrança
       if (totalAmount === 0) {
-        const tempCharge = await createAsaasCharge({
-          customer:    asaasCustomerId,
-          billingType: "CREDIT_CARD",
-          value:       5,
-          dueDate:     format(addDays(new Date(), 1), "yyyy-MM-dd"),
-          description: "Cadastro de cartão — VDO HUB (estorno automático)",
+        const tokenized = await tokenizeAsaasCard({
+          customer:             asaasCustomerId,
           creditCard:           cardData,
           creditCardHolderInfo: holderInfo,
         });
-        // Salvar token antes de estornar
-        if (tempCharge.creditCardToken) {
-          await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: tempCharge.creditCardToken } });
-          console.log(`[bookings] card tokenized via temp charge for client ${client.id}, refunding...`);
-        }
-        // Estornar imediatamente — cliente não é cobrado
-        try {
-          await refundAsaasPayment(tempCharge.id);
-          console.log(`[bookings] temp charge ${tempCharge.id} refunded`);
-        } catch (refundErr) {
-          // Estorno falhou mas token já foi salvo — logar e seguir
-          console.error(`[bookings] refund failed for temp charge ${tempCharge.id}:`, refundErr);
-        }
+        await prisma.client.update({
+          where: { id: client.id },
+          data:  { asaasCardToken: tokenized.creditCardToken },
+        });
+        console.log(`[bookings] card tokenized for client ${client.id}`);
       }
     }
   } catch (err: unknown) {

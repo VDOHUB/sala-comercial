@@ -76,9 +76,11 @@ export default function ClientesPage() {
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteMsg, setInviteMsg]         = useState<string | null>(null);
 
-  // Recuperação de token do cartão
+  // Cadastro/recuperação de token do cartão
   const [tokenRecovering, setTokenRecovering] = useState(false);
   const [tokenMsg, setTokenMsg]               = useState<string | null>(null);
+  const [tokenCardForm, setTokenCardForm]     = useState(false);
+  const [tokenCard, setTokenCard]             = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
 
   async function handleRecoverToken() {
     if (!selected) return;
@@ -92,8 +94,30 @@ export default function ClientesPage() {
     if (res.ok) {
       setTokenMsg("Token recuperado! Cobrança já disponível.");
       loadList();
+    } else if (data.needsCard) {
+      setTokenCardForm(true);
+      setTokenMsg(null);
     } else {
       setTokenMsg(data.error ?? "Não foi possível recuperar o token.");
+    }
+  }
+
+  async function handleTokenizeCard() {
+    if (!selected) return;
+    setTokenRecovering(true); setTokenMsg(null);
+    const res  = await fetch(`/api/admin/clientes/${selected.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "tokenize-card", card: { ...tokenCard, number: tokenCard.number.replace(/\s/g, "") } }),
+    });
+    const data = await res.json();
+    setTokenRecovering(false);
+    if (res.ok) {
+      setTokenMsg("Cartão cadastrado! Cobranças já disponíveis.");
+      setTokenCardForm(false);
+      setTokenCard({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+      loadList();
+    } else {
+      setTokenMsg(data.error ?? "Erro ao cadastrar cartão.");
     }
   }
 
@@ -492,15 +516,50 @@ export default function ClientesPage() {
                     <span style={{ color: "rgba(26,14,5,0.35)" }}>Não</span>
                   )}
                 </div>
-                {!selected.asaasCardToken && selected.asaasCustomerId && (
+                {!selected.asaasCardToken && (
                   <>
-                    <button onClick={handleRecoverToken} disabled={tokenRecovering}
-                      className="w-full py-1.5 rounded-lg text-xs font-semibold mt-1 disabled:opacity-40"
-                      style={{ background: "rgba(22,163,74,0.07)", color: "#166534", border: "1px solid rgba(22,163,74,0.2)" }}>
-                      {tokenRecovering ? "Recuperando..." : "Recuperar token do cartão"}
-                    </button>
+                    {!tokenCardForm ? (
+                      <button onClick={handleRecoverToken} disabled={tokenRecovering}
+                        className="w-full py-1.5 rounded-lg text-xs font-semibold mt-1 disabled:opacity-40"
+                        style={{ background: "rgba(22,163,74,0.07)", color: "#166534", border: "1px solid rgba(22,163,74,0.2)" }}>
+                        {tokenRecovering ? "Verificando..." : "Cadastrar cartão (sem cobrança)"}
+                      </button>
+                    ) : (
+                      <div className="mt-1 space-y-2">
+                        <p className="text-xs font-semibold" style={{ color: "rgba(26,14,5,0.5)" }}>Dados do cartão</p>
+                        <input value={tokenCard.holderName} onChange={(e) => setTokenCard({...tokenCard, holderName: e.target.value})}
+                          placeholder="Nome no cartão" className="w-full rounded-lg px-3 py-1.5 text-xs"
+                          style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                        <input value={tokenCard.number} onChange={(e) => setTokenCard({...tokenCard, number: e.target.value.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim()})}
+                          placeholder="0000 0000 0000 0000" maxLength={19} className="w-full rounded-lg px-3 py-1.5 text-xs"
+                          style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                        <div className="flex gap-2">
+                          <input value={tokenCard.expiryMonth} onChange={(e) => setTokenCard({...tokenCard, expiryMonth: e.target.value.replace(/\D/g,"").slice(0,2)})}
+                            placeholder="MM" maxLength={2} className="flex-1 rounded-lg px-3 py-1.5 text-xs"
+                            style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                          <input value={tokenCard.expiryYear} onChange={(e) => setTokenCard({...tokenCard, expiryYear: e.target.value.replace(/\D/g,"").slice(0,4)})}
+                            placeholder="AAAA" maxLength={4} className="flex-1 rounded-lg px-3 py-1.5 text-xs"
+                            style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                          <input value={tokenCard.ccv} onChange={(e) => setTokenCard({...tokenCard, ccv: e.target.value.replace(/\D/g,"").slice(0,4)})}
+                            placeholder="CVV" maxLength={4} className="flex-1 rounded-lg px-3 py-1.5 text-xs"
+                            style={{ background: "#ede8df", border: "1px solid rgba(26,14,5,0.12)", color: "#1a0e05" }} />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={handleTokenizeCard} disabled={tokenRecovering}
+                            className="flex-1 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40"
+                            style={{ background: "#1a0e05", color: "#f5f0e8", border: "none" }}>
+                            {tokenRecovering ? "Salvando..." : "Salvar cartão"}
+                          </button>
+                          <button onClick={() => { setTokenCardForm(false); setTokenMsg(null); }}
+                            className="py-1.5 px-3 rounded-lg text-xs"
+                            style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05", border: "1px solid rgba(26,14,5,0.1)" }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {tokenMsg && (
-                      <p className="text-xs text-center" style={{ color: tokenMsg.startsWith("Token recuperado") ? "#166534" : "#991b1b" }}>
+                      <p className="text-xs text-center mt-1" style={{ color: tokenMsg.startsWith("Cartão") || tokenMsg.startsWith("Token recuperado") ? "#166534" : "#991b1b" }}>
                         {tokenMsg}
                       </p>
                     )}
