@@ -56,19 +56,27 @@ export async function createAsaasCharge(data: {
   };
 }) {
   const res = await asaas.post("/payments", data);
-  return res.data as {
+  const raw = res.data as {
     id: string;
     invoiceUrl: string;
     pixQrCodeUrl?: string;
     status: string;
-    creditCardToken?: string;
+    // Atenção: a Asaas retorna o token aninhado em creditCard.creditCardToken,
+    // não na raiz da resposta.
+    creditCard?: { creditCardToken?: string; creditCardBrand?: string; creditCardNumber?: string };
   };
+  return { ...raw, creditCardToken: raw.creditCard?.creditCardToken };
 }
 
 // ── Consultar status do pagamento ─────────────────────────────────
 export async function getAsaasPayment(chargeId: string) {
   const res = await asaas.get(`/payments/${chargeId}`);
-  return res.data as { id: string; status: string; creditCardToken?: string };
+  const raw = res.data as {
+    id: string;
+    status: string;
+    creditCard?: { creditCardToken?: string };
+  };
+  return { ...raw, creditCardToken: raw.creditCard?.creditCardToken };
 }
 
 // ── Estornar pagamento ────────────────────────────────────────────
