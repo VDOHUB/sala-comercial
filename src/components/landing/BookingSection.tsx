@@ -118,6 +118,7 @@ export function BookingSection() {
   const [subscriptionMeta, setSubscriptionMeta] = useState<{
     token: string; planLabel: string; credits: number; expiresAt: string; portalUrl: string;
   } | null>(null);
+  const [activateUrl, setActivateUrl] = useState<string | null>(null);
 
   // Facial
   const videoRef  = useRef<HTMLVideoElement>(null);
@@ -275,6 +276,7 @@ export function BookingSection() {
       } else {
         setBookingId(data.bookingId);
       }
+      if (data.activateUrl) setActivateUrl(data.activateUrl);
       setStep(4);
     } catch {
       setError("Erro de conexão. Tente novamente.");
@@ -302,6 +304,12 @@ export function BookingSection() {
       });
       if (!res.ok) { setError("Erro ao salvar foto. Tente novamente."); return; }
       setDone(true);
+
+      // Cliente novo (sem senha ainda): leva direto pra criação de conta → cai logado no portal.
+      const redirectUrl = activateUrl ?? subscriptionMeta?.portalUrl;
+      if (redirectUrl && redirectUrl.includes("/portal/ativar")) {
+        setTimeout(() => { window.location.href = redirectUrl; }, 1500);
+      }
     } catch {
       setError("Erro de conexão.");
     } finally {
@@ -845,13 +853,19 @@ export function BookingSection() {
                         <p className="text-sm mb-1" style={{ color:"rgba(215,203,181,0.5)" }}>
                           Assinatura ativada · <strong style={{ color:"#d7cbb5" }}>{subscriptionMeta.credits} créditos</strong> disponíveis.
                         </p>
-                        <p className="text-sm mb-4" style={{ color:"rgba(215,203,181,0.5)" }}>
-                          Você receberá um e-mail com o link para agendar seus períodos.
-                        </p>
+                        {subscriptionMeta.portalUrl.includes("/portal/ativar") ? (
+                          <p className="text-sm mb-4" style={{ color:"rgba(215,203,181,0.5)" }}>
+                            Redirecionando para você criar sua senha e acessar o portal...
+                          </p>
+                        ) : (
+                          <p className="text-sm mb-4" style={{ color:"rgba(215,203,181,0.5)" }}>
+                            Você receberá um e-mail com o link para agendar seus períodos.
+                          </p>
+                        )}
                         <a href={subscriptionMeta.portalUrl} target="_blank" rel="noopener noreferrer"
                           className="inline-block px-6 py-3 rounded-xl text-sm font-bold"
                           style={{ background:"rgba(215,203,181,0.12)", color:"#d7cbb5", border:"1px solid rgba(215,203,181,0.2)" }}>
-                          Agendar meu primeiro período →
+                          {subscriptionMeta.portalUrl.includes("/portal/ativar") ? "Criar minha senha →" : "Agendar meu primeiro período →"}
                         </a>
                       </>
                     ) : (
@@ -860,7 +874,9 @@ export function BookingSection() {
                           Reserva confirmada e acesso facial cadastrado.
                         </p>
                         <p className="text-sm" style={{ color:"rgba(215,203,181,0.5)" }}>
-                          Você receberá um e-mail de confirmação em instantes.
+                          {activateUrl
+                            ? "Redirecionando para você criar sua senha e acessar o portal..."
+                            : "Você receberá um e-mail de confirmação em instantes."}
                         </p>
                       </>
                     )}

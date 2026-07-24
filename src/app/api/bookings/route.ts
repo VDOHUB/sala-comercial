@@ -5,6 +5,7 @@ import { sendSubscriptionConfirmation } from "@/lib/resend/emails";
 import { sendBookingConfirmationWithPhoto } from "@/lib/resend/notifications";
 import { z } from "zod";
 import { format, addDays, addMonths } from "date-fns";
+import crypto from "crypto";
 
 // Configuração de planos
 const PLANS: Record<string, { label: string; price: number; credits: number; validityMonths: number | null }> = {
@@ -84,6 +85,19 @@ export async function POST(req: NextRequest) {
     });
   } else if (data.cpf && !client.cpf) {
     client = await prisma.client.update({ where: { id: client.id }, data: { cpf: data.cpf } });
+  }
+
+  // Cliente sem senha ainda (compra pública, sem passar pelo portal logado):
+  // gera link de ativação para criar senha e cair direto no portal ao final.
+  let activateUrl: string | undefined;
+  if (!client.password) {
+    const inviteToken = crypto.randomBytes(32).toString("hex");
+    client = await prisma.client.update({
+      where: { id: client.id },
+      data:  { inviteToken, inviteExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 72) },
+    });
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
+    activateUrl = `${base}/portal/ativar?token=${inviteToken}`;
   }
 
   // Calcular valor e desconto (voucher válido para qualquer plano)
@@ -242,7 +256,9 @@ export async function POST(req: NextRequest) {
     });
 
     const baseUrl   = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vdohub.viverdeobra.com";
-    const portalUrl = `${baseUrl}/minha-conta/${subscription.token}`;
+    // Se o cliente ainda não tem senha, leva pra criação de conta (cai logado no portal).
+    // Senão, vai direto pro link de agendamento da assinatura.
+    const portalUrl = activateUrl ?? `${baseUrl}/minha-conta/${subscription.token}`;
 
     // E-mail enviado APÓS cadastro facial (PATCH /api/bookings/[id]/facial)
     // Retorna token para o frontend finalizar o facial e depois enviar o e-mail
@@ -253,6 +269,7 @@ export async function POST(req: NextRequest) {
       credits:     plan.credits,
       expiresAt:   expiresAt.toISOString(),
       portalUrl,
+      activateUrl,
       isMultiPeriod: true,
       free: totalAmount === 0,
     });
@@ -298,6 +315,7 @@ export async function POST(req: NextRequest) {
     discountAmount,
     free:          totalAmount === 0,
     isMultiPeriod: false,
+    activateUrl,
   });
 }
 
