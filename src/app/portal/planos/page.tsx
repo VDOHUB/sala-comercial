@@ -50,7 +50,7 @@ export default function PortalPlanosPage() {
   function openPlan(plan: Plan) {
     if (plan.credits === 1) { router.push("/portal/reservar"); return; }
     setSelected(plan); setError(null); setInst(1);
-    setCard({ holderName:"", cpf:"", number:"", expiryMonth:"", expiryYear:"", ccv:"" });
+    setCard({ holderName:"", cpf:"", number:"", expiryMonth:"", expiryYear:"", ccv:"", postalCode:"", addressNumber:"" });
   }
 
   async function handleBuy() {
