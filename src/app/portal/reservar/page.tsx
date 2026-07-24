@@ -90,7 +90,7 @@ export default function PortalReservarPage() {
   const [selectedPeriod, setPeriod] = useState<string | null>(null);
   const [voucher, setVoucher]       = useState("");
   const [useSaved, setUseSaved]     = useState(true);
-  const [card, setCard]             = useState({ holderName: "", cpf: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+  const [card, setCard]             = useState({ holderName: "", cpf: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
@@ -150,6 +150,7 @@ export default function PortalReservarPage() {
         expiryYear:  card.expiryYear,
         ccv:         card.ccv,
         cpf:         card.cpf || undefined,
+        postalCode:  card.postalCode.replace(/\D/g, "") || undefined,
       };
     }
 
@@ -369,6 +370,7 @@ export default function PortalReservarPage() {
                 <input value={card.ccv} onChange={(e) => setCard({ ...card, ccv: e.target.value })} placeholder="CVV" maxLength={4} style={{ ...S.input, flex: 1 }} />
               </div>
               <input value={card.cpf} onChange={(e) => setCard({ ...card, cpf: e.target.value })} placeholder="CPF do titular" maxLength={14} style={S.input} />
+              <input value={card.postalCode} onChange={(e) => setCard({ ...card, postalCode: e.target.value.replace(/\D/g, "").slice(0, 8) })} placeholder="CEP do titular (somente números)" maxLength={8} inputMode="numeric" style={S.input} />
             </div>
           )}
         </div>
