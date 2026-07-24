@@ -23,18 +23,26 @@ export async function GET() {
 
   try {
     const session = await loginControlId();
-    const results = await Promise.all([
-      fcgiGet(session, "access_rules"),
-      fcgiGet(session, "portals"),
-      fcgiGet(session, "groups"),
-      fcgiGet(session, "user_groups"),
-      fcgiGet(session, "group_accessrules"),
-      fcgiGet(session, "group_portals"),
-      fcgiGet(session, "time_zones"),
-    ]);
+    const objectNames = [
+      "access_rules",
+      "portals",
+      "groups",
+      "user_groups",
+      "time_zones",
+      "access_rules_groups",
+      "access_rules_time_zones",
+      "access_rules_portals",
+      "access_rules_users",
+      "group_access_rules",
+      "portal_access_rules",
+      "user_access_rules",
+      "user_time_zones",
+    ];
 
-    const [accessRules, portals, groups, userGroups, groupAccessRules, groupPortals, timeZones] = results;
-    return NextResponse.json({ accessRules, portals, groups, userGroups, groupAccessRules, groupPortals, timeZones });
+    const results = await Promise.all(objectNames.map((obj) => fcgiGet(session, obj)));
+    const out: Record<string, unknown> = {};
+    objectNames.forEach((name, i) => { out[name] = results[i]; });
+    return NextResponse.json(out);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
