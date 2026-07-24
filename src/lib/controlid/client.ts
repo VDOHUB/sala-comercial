@@ -81,7 +81,9 @@ export async function setControlIdPhoto(
 ): Promise<void> {
   const data = await fcgi<{ results?: { user_id: number; success: boolean; errors: unknown }[] }>(
     session, "user_set_image_list.fcgi", {
-      match: true,
+      // match:false — não rejeita a foto por baixa confiança de detecção facial na API;
+      // selfies tiradas pelo celular (ângulo/luz variável) eram descartadas com match:true
+      match: false,
       user_images: [{
         user_id:   userId,
         timestamp: Math.floor(Date.now() / 1000),
