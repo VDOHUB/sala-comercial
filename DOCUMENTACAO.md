@@ -86,7 +86,7 @@ RESEND_API_KEY=...
 NEXT_PUBLIC_BASE_URL=https://vdohub.viverdeobra.com
 
 # Control iD iDFace
-CONTROLID_URL=http://ob55et1.idconnect.controlid.com.br
+CONTROLID_URL=https://4z2ugfrdsr.idconnectsecure.controlid.com.br
 CONTROLID_LOGIN=vdohub
 CONTROLID_PASSWORD=230326
 
