@@ -150,27 +150,55 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   let idFaceOk = false;
   let idFaceError: string | null = null;
+  let wasRecreated = false;
 
   try {
     const ctrlSession = await loginControlId();
-    let userId = client.controlidUserId;
 
-    if (!userId) {
-      const created = await createControlIdUser(ctrlSession, {
-        name:         client.name,
-        registration: client.id,
-      });
-      userId = created.userId;
+    // Não confia cegamente no controlidUserId salvo — o dispositivo pode ter
+    // perdido esse usuário (reset, limpeza manual etc). createControlIdUser já
+    // verifica por "registration" (=clientId) no aparelho e recria se preciso.
+    const { userId } = await createControlIdUser(ctrlSession, {
+      name:         client.name,
+      registration: client.id,
+    });
+    if (userId !== client.controlidUserId) {
+      wasRecreated = true;
       await prisma.client.update({ where: { id }, data: { controlidUserId: userId } });
     }
 
     const base64 = processedPhoto.replace(/^data:image\/\w+;base64,/, "");
     await setControlIdPhoto(ctrlSession, userId, base64);
     idFaceOk = true;
+
+    // Usuário recriado no dispositivo perde grupo/regra de acesso — religa
+    // reservas ativas/futuras, igual ao fluxo normal de cadastro facial.
+    if (wasRecreated) {
+      const now = new Date();
+      const bookings = await prisma.booking.findMany({
+        where: { clientId: id, status: { in: ["PAID", "PENDING", "ACTIVE"] }, endAt: { gt: now } },
+      });
+      for (const booking of bookings) {
+        try {
+          if (booking.startAt <= now && booking.endAt > now) {
+            await enableControlIdUser(ctrlSession, userId);
+            await prisma.booking.update({ where: { id: booking.id }, data: { status: "ACTIVE" } });
+            await scheduleRevoke(booking.id, booking.endAt);
+            await scheduleEndingReminders(booking.id, booking.endAt);
+          } else if (booking.startAt > now) {
+            await scheduleGrant(booking.id, booking.startAt);
+            await scheduleRevoke(booking.id, booking.endAt);
+            await scheduleEndingReminders(booking.id, booking.endAt);
+          }
+        } catch (e) {
+          console.error(`[admin/facial] rotate: erro ao religar booking ${booking.id}:`, e);
+        }
+      }
+    }
   } catch (err) {
     console.error("[admin/facial] rotate re-upload error:", err);
     idFaceError = err instanceof Error ? err.message : "Erro ao reenviar pro iDFace.";
   }
 
-  return NextResponse.json({ ok: true, facePhoto: processedPhoto, idFaceOk, idFaceError });
+  return NextResponse.json({ ok: true, facePhoto: processedPhoto, idFaceOk, idFaceError, wasRecreated });
 }
