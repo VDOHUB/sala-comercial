@@ -156,7 +156,9 @@ export default function ClientesPage() {
     if (res.ok) {
       setSelected((prev) => prev ? { ...prev, facePhoto: data.facePhoto } : prev);
       setClients((prev) => prev.map((c) => c.id === selected.id ? { ...c, facePhoto: data.facePhoto } : c));
-      setRotateMsg(data.idFaceOk ? "Foto girada e reenviada ao iDFace!" : "Foto girada, mas houve erro ao reenviar ao iDFace.");
+      setRotateMsg(data.idFaceOk
+        ? "Foto girada e reenviada ao iDFace!"
+        : `Foto girada, mas houve erro ao reenviar ao iDFace${data.idFaceError ? `: ${data.idFaceError}` : "."}`);
     } else {
       setRotateMsg(data.error ?? "Erro ao girar foto.");
     }

@@ -151,16 +151,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   let idFaceOk = false;
   let idFaceError: string | null = null;
 
-  if (client.controlidUserId) {
-    try {
-      const ctrlSession = await loginControlId();
-      const base64 = processedPhoto.replace(/^data:image\/\w+;base64,/, "");
-      await setControlIdPhoto(ctrlSession, client.controlidUserId, base64);
-      idFaceOk = true;
-    } catch (err) {
-      console.error("[admin/facial] rotate re-upload error:", err);
-      idFaceError = err instanceof Error ? err.message : "Erro ao reenviar pro iDFace.";
+  try {
+    const ctrlSession = await loginControlId();
+    let userId = client.controlidUserId;
+
+    if (!userId) {
+      const created = await createControlIdUser(ctrlSession, {
+        name:         client.name,
+        registration: client.id,
+      });
+      userId = created.userId;
+      await prisma.client.update({ where: { id }, data: { controlidUserId: userId } });
     }
+
+    const base64 = processedPhoto.replace(/^data:image\/\w+;base64,/, "");
+    await setControlIdPhoto(ctrlSession, userId, base64);
+    idFaceOk = true;
+  } catch (err) {
+    console.error("[admin/facial] rotate re-upload error:", err);
+    idFaceError = err instanceof Error ? err.message : "Erro ao reenviar pro iDFace.";
   }
 
   return NextResponse.json({ ok: true, facePhoto: processedPhoto, idFaceOk, idFaceError });
