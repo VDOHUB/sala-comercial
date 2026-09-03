@@ -140,6 +140,28 @@ export default function ClientesPage() {
   const [faceResult, setFaceResult]   = useState<{ ok?: boolean; idFaceOk?: boolean; idFaceError?: string | null; error?: string; qstashResults?: { bookingId: string; action: string; ok: boolean; error?: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Girar foto facial já cadastrada (corrigir fotos antigas que subiram deitadas)
+  const [rotating, setRotating] = useState(false);
+  const [rotateMsg, setRotateMsg] = useState<string | null>(null);
+
+  async function handleRotate(degrees: 90 | -90 | 180) {
+    if (!selected) return;
+    setRotating(true); setRotateMsg(null);
+    const res  = await fetch(`/api/admin/clientes/${selected.id}/facial`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ degrees }),
+    });
+    const data = await res.json();
+    setRotating(false);
+    if (res.ok) {
+      setSelected((prev) => prev ? { ...prev, facePhoto: data.facePhoto } : prev);
+      setClients((prev) => prev.map((c) => c.id === selected.id ? { ...c, facePhoto: data.facePhoto } : c));
+      setRotateMsg(data.idFaceOk ? "Foto girada e reenviada ao iDFace!" : "Foto girada, mas houve erro ao reenviar ao iDFace.");
+    } else {
+      setRotateMsg(data.error ?? "Erro ao girar foto.");
+    }
+  }
+
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   function loadList() {
@@ -413,7 +435,7 @@ export default function ClientesPage() {
 
               {/* Foto facial */}
               {selected.facePhoto ? (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-2">
                   <div className="relative">
                     <img src={selected.facePhoto} alt={selected.name}
                       className="w-24 h-24 rounded-2xl object-cover"
@@ -423,6 +445,26 @@ export default function ClientesPage() {
                       ✓ Facial
                     </span>
                   </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => handleRotate(-90)} disabled={rotating}
+                      title="Girar 90° à esquerda"
+                      className="w-7 h-7 rounded-lg text-sm flex items-center justify-center disabled:opacity-40"
+                      style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05" }}>↺</button>
+                    <button onClick={() => handleRotate(180)} disabled={rotating}
+                      title="Girar 180°"
+                      className="w-7 h-7 rounded-lg text-sm flex items-center justify-center disabled:opacity-40"
+                      style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05" }}>⇅</button>
+                    <button onClick={() => handleRotate(90)} disabled={rotating}
+                      title="Girar 90° à direita"
+                      className="w-7 h-7 rounded-lg text-sm flex items-center justify-center disabled:opacity-40"
+                      style={{ background: "rgba(26,14,5,0.06)", color: "#1a0e05" }}>↻</button>
+                  </div>
+                  {rotating && <p className="text-xs" style={{ color: "rgba(26,14,5,0.4)" }}>Girando...</p>}
+                  {rotateMsg && (
+                    <p className="text-xs text-center" style={{ color: rotateMsg.startsWith("Foto girada e") ? "#166534" : "#991b1b" }}>
+                      {rotateMsg}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="flex justify-center">

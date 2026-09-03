@@ -117,3 +117,51 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   return NextResponse.json({ ok: true, idFaceOk, idFaceError, qstashResults });
 }
+
+// PATCH /api/admin/clientes/[id]/facial
+// Body: { degrees: 90 | -90 | 180 }
+// Gira a foto já salva do cliente (corrige fotos antigas que subiram deitadas,
+// já que o processamento anterior não corrigia a orientação EXIF) e reenvia
+// pro iDFace.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const { degrees } = await req.json() as { degrees: 90 | -90 | 180 };
+
+  if (![90, -90, 180].includes(degrees)) {
+    return NextResponse.json({ error: "Ângulo inválido." }, { status: 400 });
+  }
+
+  const client = await prisma.client.findUnique({ where: { id } });
+  if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
+  if (!client.facePhoto) return NextResponse.json({ error: "Cliente não tem foto cadastrada." }, { status: 400 });
+
+  const base64Data = client.facePhoto.replace(/^data:image\/\w+;base64,/, "");
+  const buffer = Buffer.from(base64Data, "base64");
+  const rotated = await sharp(buffer)
+    .rotate(degrees)
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  const processedPhoto = `data:image/jpeg;base64,${rotated.toString("base64")}`;
+
+  await prisma.client.update({ where: { id }, data: { facePhoto: processedPhoto } });
+
+  let idFaceOk = false;
+  let idFaceError: string | null = null;
+
+  if (client.controlidUserId) {
+    try {
+      const ctrlSession = await loginControlId();
+      const base64 = processedPhoto.replace(/^data:image\/\w+;base64,/, "");
+      await setControlIdPhoto(ctrlSession, client.controlidUserId, base64);
+      idFaceOk = true;
+    } catch (err) {
+      console.error("[admin/facial] rotate re-upload error:", err);
+      idFaceError = err instanceof Error ? err.message : "Erro ao reenviar pro iDFace.";
+    }
+  }
+
+  return NextResponse.json({ ok: true, facePhoto: processedPhoto, idFaceOk, idFaceError });
+}
