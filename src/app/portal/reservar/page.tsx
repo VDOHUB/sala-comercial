@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addDays, format, isWeekend, isSameDay, parseISO, getHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { buildCardPayload, errorText } from "@/lib/portalCard";
 
 type ClientData = {
   id: string; name: string; email: string; phone: string | null; cpf: string | null;
-  hasCard: boolean; hasFace: boolean;
+  hasCard: boolean; cardLast4?: string | null; cardBrand?: string | null; hasFace: boolean;
 };
 
 type Slot = { startAt: string; endAt: string };
@@ -106,7 +107,7 @@ export default function PortalReservarPage() {
     fetch("/api/client/me").then(async (r) => {
       if (r.status === 401) { router.push("/portal/login"); return; }
       const d = await r.json();
-      setClient({ id: d.id, name: d.name, email: d.email, phone: d.phone, cpf: d.cpf, hasCard: d.hasCard, hasFace: !!d.facePhoto });
+      setClient({ id: d.id, name: d.name, email: d.email, phone: d.phone, cpf: d.cpf, hasCard: d.hasCard, cardLast4: d.cardLast4, cardBrand: d.cardBrand, hasFace: !!d.hasFace });
       setLoading(false);
     });
   }, [router]);
@@ -123,8 +124,10 @@ export default function PortalReservarPage() {
   // ── Step 1: submit booking ──────────────────────────────────────
   async function handleSubmit() {
     if (!client || !selectedDay || !selectedPeriod) { setError("Selecione uma data e período."); return; }
-    if (!useSaved && (!card.holderName || !card.number || !card.expiryMonth || !card.expiryYear || !card.ccv)) {
-      setError("Preencha todos os dados do cartão."); return;
+    let cardPayload: ReturnType<typeof buildCardPayload> | null = null;
+    if (!useSaved) {
+      cardPayload = buildCardPayload(card);
+      if (!cardPayload.ok) { setError(cardPayload.error); return; }
     }
     setSubmitting(true); setError(null);
 
@@ -142,25 +145,24 @@ export default function PortalReservarPage() {
 
     if (useSaved) {
       body.useSavedCard = true;
-    } else {
-      body.card = {
-        holderName:  card.holderName,
-        number:      card.number.replace(/\s/g, ""),
-        expiryMonth: card.expiryMonth.padStart(2, "0"),
-        expiryYear:  card.expiryYear,
-        ccv:         card.ccv,
-        cpf:         card.cpf || undefined,
-        postalCode:     card.postalCode.replace(/\D/g, "") || undefined,
-        addressNumber:  card.addressNumber || undefined,
-      };
+    } else if (cardPayload?.ok) {
+      body.card = cardPayload.card;
     }
 
-    const res  = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json();
+    let res: Response;
+    let data: { error?: unknown; bookingId?: string };
+    try {
+      res  = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      data = await res.json();
+    } catch {
+      setSubmitting(false);
+      setError("Não foi possível falar com o servidor. Verifique a conexão e tente de novo.");
+      return;
+    }
     setSubmitting(false);
-    if (!res.ok) { setError(data.error ?? "Erro ao criar reserva."); return; }
+    if (!res.ok) { setError(errorText(data.error, "Erro ao criar reserva.")); return; }
 
-    setBookingId(data.bookingId);
+    setBookingId(data.bookingId ?? null);
 
     // Se já tem foto cadastrada, pula etapa facial
     if (client.hasFace) { setDone(true); return; }
@@ -353,7 +355,7 @@ export default function PortalReservarPage() {
           {client?.hasCard && (
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <button onClick={() => setUseSaved(true)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${useSaved ? "#1a0e05" : "rgba(26,14,5,0.12)"}`, background: useSaved ? "#1a0e05" : "#faf7f2", color: useSaved ? "#f5f0e8" : "#1a0e05", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cartão salvo
+                {client?.cardLast4 ? `Cartão ${client.cardBrand ? client.cardBrand.charAt(0) + client.cardBrand.slice(1).toLowerCase() + " " : ""}•••• ${client.cardLast4}` : "Cartão salvo"}
               </button>
               <button onClick={() => setUseSaved(false)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${!useSaved ? "#1a0e05" : "rgba(26,14,5,0.12)"}`, background: !useSaved ? "#1a0e05" : "#faf7f2", color: !useSaved ? "#f5f0e8" : "#1a0e05", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Outro cartão

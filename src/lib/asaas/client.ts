@@ -37,6 +37,8 @@ export async function createAsaasCharge(data: {
   externalReference?: string;
   installmentCount?: number;
   installmentValue?: number;
+  /** IP do cliente (não o do servidor): o antifraude do Asaas usa para avaliar a compra com cartão. */
+  remoteIp?: string;
   creditCard?: {
     holderName: string;
     number: string;
@@ -87,6 +89,7 @@ export async function refundAsaasPayment(chargeId: string): Promise<void> {
 // ── Tokenizar cartão (sem cobrança) ──────────────────────────────
 export async function tokenizeAsaasCard(data: {
   customer: string;
+  remoteIp?: string;
   creditCard: {
     holderName: string;
     number: string;
@@ -109,6 +112,7 @@ export async function tokenizeAsaasCard(data: {
     customer:             data.customer,
     creditCard:           data.creditCard,
     creditCardHolderInfo: data.creditCardHolderInfo,
+    ...(data.remoteIp ? { remoteIp: data.remoteIp } : {}),
   });
   return res.data;
 }
@@ -121,6 +125,7 @@ export async function createAsaasChargeWithToken(data: {
   dueDate: string;
   description: string;
   externalReference?: string;
+  remoteIp?: string;
 }) {
   const res = await asaas.post("/payments", {
     customer:        data.customer,
@@ -130,6 +135,7 @@ export async function createAsaasChargeWithToken(data: {
     description:     data.description,
     externalReference: data.externalReference,
     creditCardToken: data.creditCardToken,
+    ...(data.remoteIp ? { remoteIp: data.remoteIp } : {}),
   });
   return res.data as { id: string; invoiceUrl: string; status: string };
 }

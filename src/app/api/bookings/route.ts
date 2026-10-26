@@ -31,8 +31,8 @@ const cardSchema = z.object({
 const schema = z.object({
   name:        z.string().min(2),
   email:       z.string().email(),
-  phone:       z.string().optional(),
-  cpf:         z.string().optional(),
+  phone:       z.string().nullish(),
+  cpf:         z.string().nullish(),
   planKey:     z.string(),
   // HUB ONE only
   startAt:     z.string().datetime().optional(),
@@ -48,10 +48,31 @@ export async function POST(req: NextRequest) {
   const body   = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    // Sempre uma frase: a página renderiza `error` direto no JSX, e um objeto aqui
+    // derrubava a tela inteira ("This page couldn't load").
+    const labels: Record<string, string> = {
+      "card.holderName":  "nome no cartão",
+      "card.number":      "número do cartão",
+      "card.expiryMonth": "mês de validade (2 dígitos)",
+      "card.expiryYear":  "ano de validade (4 dígitos, ex.: 2030)",
+      "card.ccv":         "CVV",
+      "card.cpf":         "CPF/CNPJ do titular",
+      "card.postalCode":  "CEP do titular (8 números)",
+      email:              "e-mail",
+      name:               "nome",
+      startAt:            "data e horário",
+      endAt:              "data e horário",
+    };
+    const fields = [...new Set(parsed.error.issues.map((i) => labels[i.path.join(".")] ?? i.path.join(".")))].filter(Boolean);
+    return NextResponse.json(
+      { error: `Confira os dados informados${fields.length ? `: ${fields.join(", ")}` : ""}.`, fields },
+      { status: 400 },
+    );
   }
 
   const data = parsed.data;
+  // IP do cliente (não do servidor): o antifraude do Asaas avalia a compra com ele.
+  const remoteIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || undefined;
   const plan = PLANS[data.planKey];
   if (!plan) return NextResponse.json({ error: "Plano inválido." }, { status: 400 });
 
@@ -146,6 +167,7 @@ export async function POST(req: NextRequest) {
             ? plan.label
             : `Reserva VDO HUB — ${format(new Date(data.startAt!), "dd/MM/yyyy HH:mm")}`,
           externalReference: `portal-${client.id}`,
+          remoteIp,
         });
         chargeId   = charge.id;
         paymentUrl = charge.invoiceUrl;
@@ -182,7 +204,7 @@ export async function POST(req: NextRequest) {
       }
 
       const holderInfo = {
-        name:              client.name,
+        name:              data.card!.holderName,
         email:             client.email,
         cpfCnpj,
         phone:             client.phone ?? undefined,
@@ -206,23 +228,36 @@ export async function POST(req: NextRequest) {
           installmentValue: installments ? Math.ceil((totalAmount / installments) * 100) / 100 : undefined,
           creditCard:           cardData,
           creditCardHolderInfo: holderInfo,
+          remoteIp,
         });
         chargeId   = charge.id;
         paymentUrl = charge.invoiceUrl;
         if (charge.creditCardToken) {
-          await prisma.client.update({ where: { id: client.id }, data: { asaasCardToken: charge.creditCardToken } });
+          await prisma.client.update({
+            where: { id: client.id },
+            data: {
+              asaasCardToken: charge.creditCardToken,
+              asaasCardLast4: cardData.number.slice(-4),
+              asaasCardBrand: charge.creditCard?.creditCardBrand ?? null,
+            },
+          });
         }
       }
       // totalAmount === 0 (voucher 100%): tokenizar sem cobrança
       if (totalAmount === 0) {
         const tokenized = await tokenizeAsaasCard({
           customer:             asaasCustomerId,
+          remoteIp,
           creditCard:           cardData,
           creditCardHolderInfo: holderInfo,
         });
         await prisma.client.update({
           where: { id: client.id },
-          data:  { asaasCardToken: tokenized.creditCardToken },
+          data:  {
+            asaasCardToken: tokenized.creditCardToken,
+            asaasCardLast4: cardData.number.slice(-4),
+            asaasCardBrand: tokenized.creditCardBrand ?? null,
+          },
         });
         console.log(`[bookings] card tokenized for client ${client.id}`);
       }
@@ -233,10 +268,16 @@ export async function POST(req: NextRequest) {
     console.error("[bookings] ASAAS error details:", JSON.stringify(asaasErrors ?? err));
     const asaasMsg = asaasErrors?.[0]?.description;
     // Tokenização falhou (valor zero): mensagem específica
-    const msg = asaasMsg
+    let msg = asaasMsg
       ?? (totalAmount === 0
         ? "Não foi possível salvar o cartão. Verifique os dados e tente novamente."
         : "Cartão recusado. Verifique os dados e tente novamente.");
+    // Acrescenta o que o cliente pode fazer (a recusa vem do banco/antifraude, não do sistema)
+    if (/fraude/i.test(msg)) {
+      msg += " O banco recusou a validação do cartão: fale com o emissor para liberar compras online ou use outro cartão.";
+    } else if (/inv[aá]lid/i.test(msg)) {
+      msg += " Confira número, validade, CVV, CPF, CEP e número do titular, ou tente outro cartão.";
+    }
     return NextResponse.json({ error: msg }, { status: 402 });
   }
 

@@ -17,6 +17,8 @@ model Client {
   controlidUserId Int?     // ID do usuário no iDFace
   asaasCustomerId String?  // ID do cliente no ASAAS
   asaasCardToken  String?  // Token do cartão salvo no ASAAS
+  asaasCardLast4  String?  // Últimos 4 dígitos do cartão salvo (exibição)
+  asaasCardBrand  String?  // Bandeira do cartão salvo (exibição)
 
   // Portal do cliente
   password          String?  // bcrypt hash
