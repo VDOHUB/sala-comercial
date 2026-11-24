@@ -8,6 +8,7 @@ import { buildCardPayload, errorText } from "@/lib/portalCard";
 type ClientData = {
   id: string; name: string; email: string; phone: string | null; cpf: string | null;
   hasCard: boolean; cardLast4?: string | null; cardBrand?: string | null; hasFace: boolean;
+  credit: { token: string; remaining: number } | null; // pacote ativo com períodos sobrando
 };
 
 type Slot = { startAt: string; endAt: string };
@@ -91,6 +92,7 @@ export default function PortalReservarPage() {
   const [selectedPeriod, setPeriod] = useState<string | null>(null);
   const [voucher, setVoucher]       = useState("");
   const [useSaved, setUseSaved]     = useState(true);
+  const [useCredit, setUseCredit]   = useState(false);
   const [card, setCard]             = useState({ holderName: "", cpf: "", number: "", expiryMonth: "", expiryYear: "", ccv: "", postalCode: "", addressNumber: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState<string | null>(null);
@@ -107,7 +109,14 @@ export default function PortalReservarPage() {
     fetch("/api/client/me").then(async (r) => {
       if (r.status === 401) { router.push("/portal/login"); return; }
       const d = await r.json();
-      setClient({ id: d.id, name: d.name, email: d.email, phone: d.phone, cpf: d.cpf, hasCard: d.hasCard, cardLast4: d.cardLast4, cardBrand: d.cardBrand, hasFace: !!d.hasFace });
+      // Pacote ativo, dentro da validade e com crédito sobrando (o que vence primeiro é usado antes)
+      const now = Date.now();
+      const sub = (d.subscriptions ?? [])
+        .filter((x: { status: string; expiresAt: string; usedCredits: number; totalCredits: number }) =>
+          x.status === "ACTIVE" && new Date(x.expiresAt).getTime() > now && x.usedCredits < x.totalCredits)
+        .sort((a: { expiresAt: string }, b: { expiresAt: string }) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime())[0];
+      setClient({ id: d.id, name: d.name, email: d.email, phone: d.phone, cpf: d.cpf, hasCard: d.hasCard, cardLast4: d.cardLast4, cardBrand: d.cardBrand, hasFace: !!d.hasFace,
+        credit: sub ? { token: sub.token, remaining: sub.totalCredits - sub.usedCredits } : null });
       setLoading(false);
     });
   }, [router]);
@@ -119,13 +128,13 @@ export default function PortalReservarPage() {
     });
   }, [days]);
 
-  useEffect(() => { if (client) setUseSaved(client.hasCard); }, [client]);
+  useEffect(() => { if (client) { setUseSaved(client.hasCard); setUseCredit(!!client.credit); } }, [client]);
 
   // ── Step 1: submit booking ──────────────────────────────────────
   async function handleSubmit() {
     if (!client || !selectedDay || !selectedPeriod) { setError("Selecione uma data e período."); return; }
     let cardPayload: ReturnType<typeof buildCardPayload> | null = null;
-    if (!useSaved) {
+    if (!useCredit && !useSaved) {
       cardPayload = buildCardPayload(card);
       if (!cardPayload.ok) { setError(cardPayload.error); return; }
     }
@@ -143,7 +152,9 @@ export default function PortalReservarPage() {
       voucherCode: voucher || undefined,
     };
 
-    if (useSaved) {
+    if (useCredit) {
+      // sem cobrança: debita 1 período do pacote
+    } else if (useSaved) {
       body.useSavedCard = true;
     } else if (cardPayload?.ok) {
       body.card = cardPayload.card;
@@ -152,7 +163,9 @@ export default function PortalReservarPage() {
     let res: Response;
     let data: { error?: unknown; bookingId?: string };
     try {
-      res  = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      res = useCredit && client.credit
+        ? await fetch(`/api/subscriptions/${client.credit.token}/schedule`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ startAt: startAt.toISOString(), endAt: endAt.toISOString() }) })
+        : await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       data = await res.json();
     } catch {
       setSubmitting(false);
@@ -352,7 +365,18 @@ export default function PortalReservarPage() {
         {/* Payment */}
         <div style={S.sec}>
           <span style={S.label}>Pagamento</span>
-          {client?.hasCard && (
+          {client?.credit && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <button onClick={() => setUseCredit(true)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${useCredit ? "#1a0e05" : "rgba(26,14,5,0.12)"}`, background: useCredit ? "#1a0e05" : "#faf7f2", color: useCredit ? "#f5f0e8" : "#1a0e05", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Usar meu pacote ({client.credit.remaining} {client.credit.remaining === 1 ? "período" : "períodos"})
+              </button>
+              <button onClick={() => setUseCredit(false)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${!useCredit ? "#1a0e05" : "rgba(26,14,5,0.12)"}`, background: !useCredit ? "#1a0e05" : "#faf7f2", color: !useCredit ? "#f5f0e8" : "#1a0e05", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Pagar com cartão
+              </button>
+            </div>
+          )}
+          {useCredit && <p style={{ fontSize: 13, color: "rgba(26,14,5,0.55)", margin: 0 }}>Nenhuma cobrança: será usado 1 período do seu pacote.</p>}
+          {!useCredit && client?.hasCard && (
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <button onClick={() => setUseSaved(true)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${useSaved ? "#1a0e05" : "rgba(26,14,5,0.12)"}`, background: useSaved ? "#1a0e05" : "#faf7f2", color: useSaved ? "#f5f0e8" : "#1a0e05", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 {client?.cardLast4 ? `Cartão ${client.cardBrand ? client.cardBrand.charAt(0) + client.cardBrand.slice(1).toLowerCase() + " " : ""}•••• ${client.cardLast4}` : "Cartão salvo"}
@@ -363,7 +387,7 @@ export default function PortalReservarPage() {
             </div>
           )}
 
-          {!useSaved && (
+          {!useCredit && !useSaved && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input value={card.holderName} onChange={(e) => setCard({ ...card, holderName: e.target.value })} placeholder="Nome no cartão" style={S.input} />
               <input value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value })} placeholder="Número do cartão" maxLength={19} style={S.input} />
