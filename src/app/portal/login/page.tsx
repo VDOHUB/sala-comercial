@@ -1,9 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function PortalLoginPage() {
-  const router = useRouter();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
@@ -14,13 +12,30 @@ export default function PortalLoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setError("");
-    const res = await fetch("/api/client/login", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    setLoading(false);
-    if (res.ok) { router.replace("/portal"); }
-    else { const d = await res.json(); setError(d.error ?? "Erro ao entrar"); }
+    try {
+      const res = await fetch("/api/client/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(typeof d.error === "string" ? d.error : "Erro ao entrar");
+        return;
+      }
+      // Confirma que o navegador guardou a sessão antes de ir ao portal; senão o portal
+      // devolve o cliente para esta tela e parece que "nada acontece".
+      const me = await fetch("/api/client/me", { credentials: "same-origin" });
+      if (!me.ok) {
+        setError("Seu navegador não guardou o login. Se abriu o link dentro do Instagram ou WhatsApp, toque em ••• e escolha \"Abrir no Safari/Chrome\"; também verifique se os cookies não estão bloqueados.");
+        return;
+      }
+      window.location.assign("/portal");
+    } catch {
+      setError("Não foi possível falar com o servidor. Verifique a conexão e tente de novo.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleForgot(e: React.FormEvent) {
